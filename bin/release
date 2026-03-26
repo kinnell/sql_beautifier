@@ -1,0 +1,120 @@
+#!/bin/bash
+set -euo pipefail
+
+################################################################################
+## Constants
+################################################################################
+
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly WHITE='\033[1;37m'
+readonly RESET='\033[0m'
+
+readonly GEM_NAME="sql_beautifier"
+readonly VERSION_FILE="lib/${GEM_NAME}/version.rb"
+readonly CHANGELOG_FILE="CHANGELOG.md"
+readonly UNRELEASED_HEADER="## [X.X.X] - YYYY-MM-DD"
+
+################################################################################
+## Dependency Checks
+################################################################################
+
+if ! command -v gum &> /dev/null; then
+  echo -e "${RED}✗ ERROR:${RESET} ${WHITE}gum is required but not installed.${RESET}"
+  echo "Install it with: brew install gum"
+  exit 1
+fi
+
+################################################################################
+## Cleanup
+################################################################################
+
+trap 'echo -e "\n${RED}✗ ERROR:${RESET} ${WHITE}Something went wrong!${RESET}" >&2' ERR
+trap 'echo -e "\n${RED}✗ ERROR:${RESET} ${WHITE}Process interrupted.${RESET}" >&2; exit 1' INT TERM
+
+################################################################################
+## Formatting Helpers
+################################################################################
+
+function print_error()   { echo -e "${RED}✗ ERROR:${RESET} ${WHITE}${1}${RESET}"; }
+function print_success() { echo -e "${GREEN}✓${RESET} ${1}"; }
+
+################################################################################
+## Helpers
+################################################################################
+
+function current_version() {
+  sed -n 's/.*VERSION = "\([^"]*\)".*/\1/p' "${VERSION_FILE}"
+}
+
+function prompt_version() {
+  local current="$1"
+
+  gum input \
+    --header "Current version: ${current}" \
+    --placeholder "Enter new version (e.g. 0.5.0)" \
+    --value "${current}"
+}
+
+function update_version_file() {
+  local old_version="$1"
+  local new_version="$2"
+
+  perl -i -pe "s/VERSION = \"\\Q${old_version}\\E\"/VERSION = \"${new_version}\"/" "${VERSION_FILE}"
+}
+
+function update_changelog() {
+  local new_version="$1"
+  local today
+  today=$(date +%Y-%m-%d)
+
+  perl -i -pe "s/\\Q${UNRELEASED_HEADER}\\E/${UNRELEASED_HEADER}\n\n## [${new_version}] - ${today}/" "${CHANGELOG_FILE}"
+}
+
+function run_ci() {
+  bin/ci
+}
+
+function commit_and_push() {
+  local new_version="$1"
+
+  git add "${VERSION_FILE}" "${CHANGELOG_FILE}"
+  git commit -m "Bump version to ${new_version}"
+  git push
+}
+
+function build_and_publish_gem() {
+  local new_version="$1"
+
+  rake gem_tasks:build
+  gem push "pkg/${GEM_NAME}-${new_version}.gem"
+}
+
+################################################################################
+## Execution
+################################################################################
+
+old_version=$(current_version)
+new_version=$(prompt_version "${old_version}")
+
+if [[ "${old_version}" == "${new_version}" ]]; then
+  print_error "Version unchanged"
+  exit 1
+fi
+
+gum confirm "Release ${GEM_NAME} v${new_version}?" || exit 0
+
+update_version_file "${old_version}" "${new_version}"
+print_success "Updated ${VERSION_FILE} to ${new_version}"
+
+update_changelog "${new_version}"
+print_success "Updated ${CHANGELOG_FILE} for ${new_version}"
+
+run_ci
+print_success "CI passed"
+
+commit_and_push "${new_version}"
+print_success "Committed and pushed"
+
+build_and_publish_gem "${new_version}"
+print_success "Released ${GEM_NAME} v${new_version}"

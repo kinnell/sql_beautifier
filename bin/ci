@@ -1,0 +1,104 @@
+#!/bin/bash
+set -euo pipefail
+
+################################################################################
+## Constants
+################################################################################
+
+readonly RESET='\033[0m'
+readonly BOLD='\033[1;33m'
+readonly TITLE='\033[35m'
+readonly DIM='\033[2m'
+readonly GREEN='\033[32m'
+readonly RED='\033[31m'
+
+readonly SUCCESS_INDICATOR="${GREEN}✓${RESET}"
+readonly FAILURE_INDICATOR="${RED}✗${RESET}"
+
+RESULTS=()
+
+################################################################################
+## Display Helpers
+################################################################################
+
+function print_heading() {
+  local text="$1"
+  local subtitle="${2:-}"
+
+  echo ""
+  echo -e "${TITLE}${text}${RESET}"
+  [[ -n "$subtitle" ]] && echo -e "${DIM}${subtitle}${RESET}"
+  echo ""
+}
+
+function print_banner() {
+  local text="$1"
+  local subtitle="${2:-}"
+
+  echo -e "${BOLD}${text}${RESET}"
+  [[ -n "$subtitle" ]] && echo -e "${DIM}${subtitle}${RESET}"
+}
+
+function print_result() {
+  local title="$1"
+  local duration="$2"
+  local passed="$3"
+
+  if [[ "$passed" == "true" ]]; then
+    echo -e "\n${GREEN}${SUCCESS_INDICATOR} ${title} passed in ${duration}${RESET}\n"
+  else
+    echo -e "\n${RED}${FAILURE_INDICATOR} ${title} failed in ${duration}${RESET}\n"
+  fi
+}
+
+################################################################################
+## Runner
+################################################################################
+
+function run_step() {
+  local title="$1"
+  shift
+  local command="$*"
+
+  print_heading "$title" "$command"
+
+  local passed
+  local SECONDS=0
+
+  if eval "$command"; then
+    passed="true"
+  else
+    passed="false"
+  fi
+
+  RESULTS+=("$passed")
+
+  print_result "$title" "${SECONDS}s" "$passed"
+}
+
+function all_passed() {
+  for result in "${RESULTS[@]}"; do
+    if [[ "$result" != "true" ]]; then
+      return 1
+    fi
+  done
+  return 0
+}
+
+################################################################################
+## Main
+################################################################################
+
+print_banner "Continuous Integration" "Running tests and style checks"
+
+SECONDS=0
+
+run_step "Tests: RSpec" "bundle exec rspec"
+run_step "Style: Ruby" "bundle exec rubocop"
+
+if all_passed; then
+  print_result "Continuous Integration" "${SECONDS}s" "true"
+else
+  print_result "Continuous Integration" "${SECONDS}s" "false"
+  exit 1
+fi
