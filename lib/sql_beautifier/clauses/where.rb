@@ -2,12 +2,8 @@
 
 module SqlBeautifier
   module Clauses
-    class Where < Base
+    class Where < ConditionClause
       KEYWORD_PREFIX = "where   "
-
-      def call
-        "#{KEYWORD_PREFIX}#{@value.strip}"
-      end
     end
   end
 end

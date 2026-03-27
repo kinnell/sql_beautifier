@@ -11,5 +11,37 @@ module SqlBeautifier
       "order by",
       "limit",
     ].freeze
+
+    JOIN_KEYWORDS = [
+      "inner join",
+      "left outer join",
+      "right outer join",
+      "full outer join",
+      "left join",
+      "right join",
+      "full join",
+      "cross join",
+    ].freeze
+
+    JOIN_KEYWORDS_BY_LENGTH = JOIN_KEYWORDS.sort_by { |keyword| -keyword.length }.freeze
+    JOIN_KEYWORD_PATTERN = %r{\b(#{JOIN_KEYWORDS.map { |keyword| Regexp.escape(keyword) }.join('|')})\b}i
+
+    CONJUNCTIONS = %w[and or].freeze
+    BETWEEN_KEYWORD = "between"
+
+    INLINE_GROUP_THRESHOLD = 100
+    KEYWORD_COLUMN_WIDTH = 8
+
+    LEADING_KEYWORD_INDENT_PATTERN = %r{\A#{' ' * KEYWORD_COLUMN_WIDTH}}
+
+    OPEN_PARENTHESIS = "("
+    CLOSE_PARENTHESIS = ")"
+    COMMA = ","
+
+    WHITESPACE_REGEX = %r{\s+}
+    WHITESPACE_CHARACTER_REGEX = %r{\s}
+    SINGLE_QUOTE = "'"
+    DOUBLE_QUOTE = '"'
+    ESCAPED_DOUBLE_QUOTE = '""'
   end
 end

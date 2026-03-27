@@ -16,8 +16,8 @@ module SqlBeautifier
 
         match_position = match.begin(0)
 
-        previous_character = match_position.zero? ? nil : sql[match_position - 1]
-        next_character = match_position + keyword.length >= sql.length ? nil : sql[match_position + keyword.length]
+        previous_character = character_before(sql, match_position)
+        next_character = character_after(sql, match_position, keyword.length)
 
         return match_position if word_boundary?(previous_character) && word_boundary?(next_character) && top_level?(sql, match_position)
 
@@ -48,7 +48,15 @@ module SqlBeautifier
 
       boundaries.each_with_index do |boundary, boundary_index|
         content_start = boundary[:position] + boundary[:keyword].length
-        content_end = boundary_index + 1 < boundaries.length ? boundaries[boundary_index + 1][:position] : sql.length
+
+        content_end = begin
+          if boundary_index + 1 < boundaries.length
+            boundaries[boundary_index + 1][:position]
+          else
+            sql.length
+          end
+        end
+
         clause_symbol = boundary[:keyword].tr(" ", "_").to_sym
 
         clauses[clause_symbol] = sql[content_start...content_end].strip
@@ -71,10 +79,10 @@ module SqlBeautifier
         if inside_string_literal
           current_segment << character
 
-          if character == "'" && text[position + 1] == "'"
+          if escaped_single_quote?(text, position)
             position += 1
             current_segment << text[position]
-          elsif character == "'"
+          elsif character == Constants::SINGLE_QUOTE
             inside_string_literal = false
           end
 
@@ -85,10 +93,10 @@ module SqlBeautifier
         if inside_quoted_identifier
           current_segment << character
 
-          if character == '"' && text[position + 1] == '"'
+          if escaped_double_quote?(text, position)
             position += 1
             current_segment << text[position]
-          elsif character == '"'
+          elsif character == Constants::DOUBLE_QUOTE
             inside_quoted_identifier = false
           end
 
@@ -97,23 +105,23 @@ module SqlBeautifier
         end
 
         case character
-        when "'"
+        when Constants::SINGLE_QUOTE
           inside_string_literal = true
           current_segment << character
 
-        when '"'
+        when Constants::DOUBLE_QUOTE
           inside_quoted_identifier = true
           current_segment << character
 
-        when "("
+        when Constants::OPEN_PARENTHESIS
           parenthesis_depth += 1
           current_segment << character
 
-        when ")"
+        when Constants::CLOSE_PARENTHESIS
           parenthesis_depth = [parenthesis_depth - 1, 0].max
           current_segment << character
 
-        when ","
+        when Constants::COMMA
           if parenthesis_depth.zero?
             segments << current_segment.strip
             current_segment = +""
@@ -132,8 +140,116 @@ module SqlBeautifier
       segments
     end
 
+    def split_top_level_conditions(text)
+      conjunction_boundaries = scan_top_level_conjunctions(text)
+
+      return [[nil, text.strip]] if conjunction_boundaries.empty?
+
+      condition_pairs = []
+      first_condition_text = text[0...conjunction_boundaries.first[:position]].strip
+      condition_pairs << [nil, first_condition_text]
+
+      conjunction_boundaries.each_with_index do |boundary, boundary_index|
+        content_start = boundary[:position] + boundary[:conjunction].length
+
+        content_end = begin
+          if boundary_index + 1 < conjunction_boundaries.length
+            conjunction_boundaries[boundary_index + 1][:position]
+          else
+            text.length
+          end
+        end
+
+        condition_text = text[content_start...content_end].strip
+
+        condition_pairs << [boundary[:conjunction], condition_text]
+      end
+
+      condition_pairs
+    end
+
+    def find_matching_parenthesis(text, opening_position)
+      parenthesis_depth = 0
+      inside_string_literal = false
+      inside_quoted_identifier = false
+      position = opening_position
+
+      while position < text.length
+        character = text[position]
+
+        if inside_string_literal
+          if escaped_single_quote?(text, position)
+            position += 2
+            next
+          elsif character == Constants::SINGLE_QUOTE
+            inside_string_literal = false
+          end
+
+          position += 1
+          next
+        end
+
+        if inside_quoted_identifier
+          if escaped_double_quote?(text, position)
+            position += 2
+            next
+          elsif character == Constants::DOUBLE_QUOTE
+            inside_quoted_identifier = false
+          end
+
+          position += 1
+          next
+        end
+
+        case character
+        when Constants::SINGLE_QUOTE
+          inside_string_literal = true
+        when Constants::DOUBLE_QUOTE
+          inside_quoted_identifier = true
+        when Constants::OPEN_PARENTHESIS
+          parenthesis_depth += 1
+        when Constants::CLOSE_PARENTHESIS
+          parenthesis_depth -= 1
+          return position if parenthesis_depth.zero?
+        end
+
+        position += 1
+      end
+
+      nil
+    end
+
+    def outer_parentheses_wrap_all?(text)
+      trimmed_text = text.strip
+      return false unless trimmed_text.start_with?(Constants::OPEN_PARENTHESIS)
+
+      closing_parenthesis_position = find_matching_parenthesis(trimmed_text, 0)
+
+      closing_parenthesis_position == trimmed_text.length - 1
+    end
+
     def word_boundary?(character)
       character.nil? || character !~ IDENTIFIER_CHARACTER
+    end
+
+    def character_before(text, position)
+      return nil if position.zero?
+
+      text[position - 1]
+    end
+
+    def character_after(text, position, offset)
+      return nil if position + offset >= text.length
+
+      text[position + offset]
+    end
+
+    def escaped_single_quote?(text, position)
+      text[position] == Constants::SINGLE_QUOTE && text[position + 1] == Constants::SINGLE_QUOTE
+    end
+
+    def escaped_double_quote?(text, position)
+      text[position] == Constants::DOUBLE_QUOTE && text[position + 1] == Constants::DOUBLE_QUOTE
     end
 
     def top_level?(sql, target_position)
@@ -146,10 +262,10 @@ module SqlBeautifier
         character = sql[position]
 
         if inside_string_literal
-          if character == "'" && sql[position + 1] == "'"
+          if escaped_single_quote?(sql, position)
             position += 2
             next
-          elsif character == "'"
+          elsif character == Constants::SINGLE_QUOTE
             inside_string_literal = false
           end
 
@@ -158,10 +274,10 @@ module SqlBeautifier
         end
 
         if inside_quoted_identifier
-          if character == '"' && sql[position + 1] == '"'
+          if escaped_double_quote?(sql, position)
             position += 2
             next
-          elsif character == '"'
+          elsif character == Constants::DOUBLE_QUOTE
             inside_quoted_identifier = false
           end
 
@@ -170,13 +286,13 @@ module SqlBeautifier
         end
 
         case character
-        when "'"
+        when Constants::SINGLE_QUOTE
           inside_string_literal = true
-        when '"'
+        when Constants::DOUBLE_QUOTE
           inside_quoted_identifier = true
-        when "("
+        when Constants::OPEN_PARENTHESIS
           parenthesis_depth += 1
-        when ")"
+        when Constants::CLOSE_PARENTHESIS
           parenthesis_depth = [parenthesis_depth - 1, 0].max
         end
 
@@ -184,6 +300,93 @@ module SqlBeautifier
       end
 
       parenthesis_depth.zero? && !inside_string_literal && !inside_quoted_identifier
+    end
+
+    def scan_top_level_conjunctions(text)
+      conjunction_boundaries = []
+      parenthesis_depth = 0
+      inside_string_literal = false
+      inside_quoted_identifier = false
+      inside_between = false
+      position = 0
+
+      while position < text.length
+        character = text[position]
+
+        if inside_string_literal
+          if escaped_single_quote?(text, position)
+            position += 2
+          elsif character == Constants::SINGLE_QUOTE
+            inside_string_literal = false
+            position += 1
+          else
+            position += 1
+          end
+          next
+        end
+
+        if inside_quoted_identifier
+          if escaped_double_quote?(text, position)
+            position += 2
+          elsif character == Constants::DOUBLE_QUOTE
+            inside_quoted_identifier = false
+            position += 1
+          else
+            position += 1
+          end
+          next
+        end
+
+        case character
+        when Constants::SINGLE_QUOTE
+          inside_string_literal = true
+        when Constants::DOUBLE_QUOTE
+          inside_quoted_identifier = true
+        when Constants::OPEN_PARENTHESIS
+          parenthesis_depth += 1
+        when Constants::CLOSE_PARENTHESIS
+          parenthesis_depth = [parenthesis_depth - 1, 0].max
+        else
+          if parenthesis_depth.zero?
+            inside_between = true if keyword_at?(text, position, Constants::BETWEEN_KEYWORD)
+
+            matched_conjunction = detect_conjunction_at(text, position)
+
+            if matched_conjunction
+              if matched_conjunction == "and" && inside_between
+                inside_between = false
+              else
+                conjunction_boundaries << {
+                  conjunction: matched_conjunction,
+                  position: position,
+                }
+              end
+
+              position += matched_conjunction.length
+              next
+            end
+          end
+        end
+
+        position += 1
+      end
+
+      conjunction_boundaries
+    end
+
+    def keyword_at?(text, position, keyword)
+      return false unless text[position, keyword.length]&.downcase == keyword
+
+      previous_character = character_before(text, position)
+      next_character = character_after(text, position, keyword.length)
+
+      word_boundary?(previous_character) && word_boundary?(next_character)
+    end
+
+    def detect_conjunction_at(text, position)
+      Constants::CONJUNCTIONS.detect do |conjunction|
+        keyword_at?(text, position, conjunction)
+      end
     end
   end
 end

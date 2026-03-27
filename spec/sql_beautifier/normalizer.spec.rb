@@ -4,7 +4,7 @@ RSpec.describe SqlBeautifier::Normalizer do
   describe ".call" do
     let(:output) { described_class.call(value) }
 
-    context "when the value is nil" do
+    context "with nil" do
       let(:value) { nil }
 
       it "returns nil" do
@@ -12,7 +12,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
     end
 
-    context "when the value is an empty string" do
+    context "with an empty string" do
       let(:value) { "" }
 
       it "returns nil" do
@@ -20,7 +20,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
     end
 
-    context "when the value is a whitespace-only string" do
+    context "with a whitespace-only string" do
       let(:value) { "   " }
 
       it "returns nil" do
@@ -113,6 +113,62 @@ RSpec.describe SqlBeautifier::Normalizer do
 
       it "treats the opening quote as a regular character" do
         expect(output).to eq('select "broken from users')
+      end
+    end
+
+    context "when the value has tab characters" do
+      let(:value) { "SELECT\tid\tFROM\tusers" }
+
+      it "collapses tabs to single spaces" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "when the value has newline characters" do
+      let(:value) { "SELECT id\nFROM users\nWHERE active = true" }
+
+      it "collapses newlines to single spaces" do
+        expect(output).to eq("select id from users where active = true")
+      end
+    end
+
+    context "when the value has an unclosed single-quoted string" do
+      let(:value) { "SELECT * FROM users WHERE name = 'broken" }
+
+      it "preserves the content through end of input" do
+        expect(output).to eq("select * from users where name = 'broken")
+      end
+    end
+
+    context "when the value has a safe double-quoted identifier" do
+      let(:value) { 'SELECT "Users" FROM "Users"' }
+
+      it "removes the quotes and lowercases" do
+        expect(output).to eq("select users from users")
+      end
+    end
+
+    context "when the value has a double-quoted identifier requiring quoting" do
+      let(:value) { 'SELECT "has space" FROM users' }
+
+      it "preserves double quotes around the lowercased identifier" do
+        expect(output).to eq('select "has space" from users')
+      end
+    end
+
+    context "when the value has a double-quoted identifier with digits" do
+      let(:value) { 'SELECT "Column1" FROM users' }
+
+      it "removes quotes from a safe lowercased identifier" do
+        expect(output).to eq("select column1 from users")
+      end
+    end
+
+    context "when the value has adjacent single-quoted strings with no space" do
+      let(:value) { "SELECT 'A''B' FROM users" }
+
+      it "preserves escaped quotes inside the string" do
+        expect(output).to eq("select 'A''B' from users")
       end
     end
   end
