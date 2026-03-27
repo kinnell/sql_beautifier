@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.3.0] - 2026-03-27
+
 - Add configuration system with `SqlBeautifier.configure` block and `SqlBeautifier.reset_configuration!`
 - Add configurable keyword case (`:lower` / `:upper`), keyword column width, indent spaces, table name format (`:pascal_case` / `:lowercase`), inline group threshold, and alias strategy (`:initials` / `:none` / callable)
 - Add semicolon stripping in normalizer (trailing `;` removed before formatting)
