@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.4.0] - 2026-03-27
+
 ## [0.3.0] - 2026-03-27
 
 - Add configuration system with `SqlBeautifier.configure` block and `SqlBeautifier.reset_configuration!`
