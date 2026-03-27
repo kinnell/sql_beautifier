@@ -2,7 +2,7 @@
 
 module SqlBeautifier
   module Tokenizer
-    IDENTIFIER_CHARACTER = %r{[[:alnum:]_]}
+    IDENTIFIER_CHARACTER = %r{[[:alnum:]_$]}
 
     module_function
 
@@ -110,7 +110,7 @@ module SqlBeautifier
           current_segment << character
 
         when ")"
-          parenthesis_depth -= 1
+          parenthesis_depth = [parenthesis_depth - 1, 0].max
           current_segment << character
 
         when ","
@@ -177,7 +177,7 @@ module SqlBeautifier
         when "("
           parenthesis_depth += 1
         when ")"
-          parenthesis_depth -= 1
+          parenthesis_depth = [parenthesis_depth - 1, 0].max
         end
 
         position += 1

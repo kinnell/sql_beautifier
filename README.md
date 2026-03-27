@@ -48,7 +48,7 @@ where   active = true
 order by name
 ```
 
-Keywords are lowercased and aligned to an 8-character column. Each clause is separated by a blank line. Multi-column SELECT lists place each column on its own line with continuation indentation. Some clauses such as `limit` use a single trailing space instead of padding.
+Single-word keywords are lowercased and padded so their clause bodies start at an 8-character column. Multi-word clauses such as `order by` and `group by`, and short clauses like `limit`, use a single space between the keyword and the clause body instead of padding. Each clause is separated by a blank line. Multi-column SELECT lists place each column on its own line with continuation indentation.
 
 ### GROUP BY and HAVING
 
@@ -112,7 +112,7 @@ where   name = 'O''Brien' and status = 'Active'
 
 ### Double-Quoted Identifiers
 
-Double-quoted PostgreSQL identifiers are stripped and lowercased during normalization:
+Double-quoted PostgreSQL identifiers are normalized by lowercasing their contents. If the resulting identifier can be safely represented as an unquoted PostgreSQL identifier, the surrounding quotes are removed; otherwise, the quotes are preserved and only the contents are lowercased:
 
 ```ruby
 SqlBeautifier.call('SELECT "User_Id", "Full_Name" FROM "Users"')

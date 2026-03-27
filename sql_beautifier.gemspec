@@ -11,14 +11,14 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Opinionated PostgreSQL SQL formatter"
   spec.description = <<~TEXT
-    Formats raw SQL into a clean, consistent style with lowercase keywords, 8-character keyword column alignment, and vertically aligned clauses.
+    Formats raw SQL into a clean, consistent style with lowercase keywords, padded keyword alignment, and vertically separated clauses.
   TEXT
 
   spec.homepage = "https://github.com/kinnell/sql_beautifier"
   spec.license = "MIT"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["github_repo"] = "ssh://git@github.com/kinnell/sql_beautifier"
+  spec.metadata["github_repo"] = "https://github.com/kinnell/sql_beautifier"
   spec.metadata["source_code_uri"] = "https://github.com/kinnell/sql_beautifier"
   spec.metadata["changelog_uri"] = "https://github.com/kinnell/sql_beautifier/blob/main/CHANGELOG.md"
   spec.metadata["bug_tracker_uri"] = "https://github.com/kinnell/sql_beautifier/issues"
