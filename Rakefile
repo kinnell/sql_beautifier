@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require "bundler"
-
-namespace :gem_tasks do
-  Bundler::GemHelper.install_tasks
-end
-
 task default: :ci
 
 desc "Run continuous integration suite"

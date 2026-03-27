@@ -10,7 +10,8 @@ readonly GREEN='\033[0;32m'
 readonly WHITE='\033[1;37m'
 readonly RESET='\033[0m'
 
-readonly GEM_NAME="sql_beautifier"
+readonly GEMSPEC=(*.gemspec)
+readonly GEM_NAME="${GEMSPEC%.gemspec}"
 readonly VERSION_FILE="lib/${GEM_NAME}/version.rb"
 readonly CHANGELOG_FILE="CHANGELOG.md"
 readonly UNRELEASED_HEADER="## [X.X.X] - YYYY-MM-DD"
@@ -83,11 +84,21 @@ function commit_and_push() {
   git push
 }
 
+function tag_release() {
+  local new_version="$1"
+  local tag="v${new_version}"
+
+  git tag -a "${tag}" -m "Release ${tag}"
+  git push origin "${tag}"
+}
+
 function build_and_publish_gem() {
   local new_version="$1"
+  local gem_file="${GEM_NAME}-${new_version}.gem"
 
-  rake gem_tasks:build
-  gem push "pkg/${GEM_NAME}-${new_version}.gem"
+  gem build "${GEMSPEC}"
+  gem push "${gem_file}"
+  rm -f "${gem_file}"
 }
 
 ################################################################################
@@ -115,6 +126,9 @@ print_success "CI passed"
 
 commit_and_push "${new_version}"
 print_success "Committed and pushed"
+
+tag_release "${new_version}"
+print_success "Tagged v${new_version}"
 
 build_and_publish_gem "${new_version}"
 print_success "Released ${GEM_NAME} v${new_version}"
