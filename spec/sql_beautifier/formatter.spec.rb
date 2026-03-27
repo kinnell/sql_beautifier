@@ -649,6 +649,110 @@ RSpec.describe SqlBeautifier::Formatter do
     end
 
     ############################################################################
+    ## CREATE TABLE AS Integration
+    ############################################################################
+
+    context "with a simple CREATE TEMP TABLE AS" do
+      let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
+
+      it "formats the preamble and indented body" do
+        expect(output).to eq(<<~SQL)
+          create temp table Foo as (
+              select  id
+              from    Users u
+          )
+        SQL
+      end
+    end
+
+    context "with a CREATE TABLE AS without parentheses" do
+      let(:value) { "CREATE TEMP TABLE foo AS SELECT id FROM users" }
+
+      it "wraps the body in parentheses" do
+        expect(output).to eq(<<~SQL)
+          create temp table Foo as (
+              select  id
+              from    Users u
+          )
+        SQL
+      end
+    end
+
+    context "with a CREATE TABLE AS with JOINs and complex WHERE" do
+      let(:value) do
+        <<~SQL.chomp
+          create temp table tmp_export_constituent_ids as (
+            select distinct constituents.id
+            from constituents
+            inner join person_matches on person_matches.record_id = constituents.id
+              and person_matches.record_type = 'Constituent'
+              and person_matches.matched_record_type = 'ExternalConstituent'
+              and person_matches.score > 0.99
+              and person_matches.health_system_id = constituents.health_system_id
+            inner join external_constituents on external_constituents.id = person_matches.matched_record_id
+            inner join encounters on encounters.constituent_id = constituents.id
+            left join departments on departments.name = encounters.department
+            left join facilities on facilities.id = departments.facility_id
+            where constituents.health_system_id = 12
+              and constituents.suppressed != true
+              and constituents.is_deceased != true
+              and encounters.discharged_at >= '2026-02-01 00:00:00'
+              and encounters.discharged_at <= '2026-03-26 00:00:00'
+          )
+        SQL
+      end
+
+      it "starts with the PascalCase preamble" do
+        expect(output).to start_with("create temp table Tmp_Export_Constituent_Ids as (")
+      end
+
+      it "formats the body with DISTINCT" do
+        expect(output).to include("    select  distinct\n            c.id")
+      end
+
+      it "formats joins with aliases" do
+        expect(output).to include("inner join Person_Matches pm on pm.record_id = c.id")
+        expect(output).to include("inner join External_Constituents ec on ec.id = pm.matched_record_id")
+        expect(output).to include("inner join Encounters e on e.constituent_id = c.id")
+        expect(output).to include("left join Departments d on d.name = e.department")
+        expect(output).to include("left join Facilities f on f.id = d.facility_id")
+      end
+
+      it "formats WHERE conditions with aliases" do
+        expect(output).to include("where   c.health_system_id = 12")
+        expect(output).to include("and c.suppressed != true")
+        expect(output).to include("and e.discharged_at >= '2026-02-01 00:00:00'")
+      end
+
+      it "closes with a parenthesis" do
+        expect(output.strip).to end_with(")")
+      end
+    end
+
+    context "with a CREATE TABLE AS containing a CTE body" do
+      let(:value) { "CREATE TEMP TABLE foo AS (WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active)" }
+
+      it "formats the CTE inside the body" do
+        expect(output).to start_with("create temp table Foo as (")
+        expect(output).to include("with    active as (")
+        expect(output).to include("select  *")
+      end
+    end
+
+    context "with CREATE TABLE AS IF NOT EXISTS" do
+      let(:value) { "CREATE TEMP TABLE IF NOT EXISTS foo AS (SELECT id FROM users)" }
+
+      it "includes if not exists in the preamble" do
+        expect(output).to eq(<<~SQL)
+          create temp table if not exists Foo as (
+              select  id
+              from    Users u
+          )
+        SQL
+      end
+    end
+
+    ############################################################################
     ## Configuration Integration
     ############################################################################
 

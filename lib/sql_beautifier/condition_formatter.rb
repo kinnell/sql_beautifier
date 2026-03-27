@@ -4,7 +4,8 @@ module SqlBeautifier
   module ConditionFormatter
     module_function
 
-    def format(text, indent_width:)
+    def format(text, args = {})
+      indent_width = args.fetch(:indent_width, 0)
       conditions = Tokenizer.split_top_level_conditions(text)
       return text.strip if conditions.length <= 1 && !parse_condition_group(conditions.dig(0, 1))
 
