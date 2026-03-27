@@ -23,13 +23,13 @@ module SqlBeautifier
 
       while @position < @source.length
         case current_character
-        when "'"
+        when Constants::SINGLE_QUOTE
           consume_string_literal!
 
-        when '"'
+        when Constants::DOUBLE_QUOTE
           consume_quoted_identifier!
 
-        when %r{\s}
+        when Constants::WHITESPACE_CHARACTER_REGEX
           collapse_whitespace!
 
         else
@@ -50,7 +50,7 @@ module SqlBeautifier
     def collapse_whitespace!
       @output << " "
       @position += 1
-      @position += 1 while @position < @source.length && @source[@position] =~ %r{\s}
+      @position += 1 while @position < @source.length && @source[@position] =~ Constants::WHITESPACE_CHARACTER_REGEX
     end
 
     def consume_string_literal!
@@ -61,10 +61,10 @@ module SqlBeautifier
         character = current_character
         @output << character
 
-        if character == "'" && @source[@position + 1] == "'"
+        if character == Constants::SINGLE_QUOTE && @source[@position + 1] == Constants::SINGLE_QUOTE
           @position += 1
           @output << current_character
-        elsif character == "'"
+        elsif character == Constants::SINGLE_QUOTE
           @position += 1
           return
         end
@@ -81,10 +81,10 @@ module SqlBeautifier
       while @position < @source.length
         character = current_character
 
-        if character == '"' && @source[@position + 1] == '"'
-          identifier << '"'
+        if character == Constants::DOUBLE_QUOTE && @source[@position + 1] == Constants::DOUBLE_QUOTE
+          identifier << Constants::DOUBLE_QUOTE
           @position += 2
-        elsif character == '"'
+        elsif character == Constants::DOUBLE_QUOTE
           @position += 1
           @output << format_identifier(identifier)
           return
@@ -100,13 +100,11 @@ module SqlBeautifier
     end
 
     def format_identifier(identifier)
-      lowercased = identifier.downcase
+      downcased_identifier = identifier.downcase
+      return downcased_identifier unless requires_quoting?(downcased_identifier)
 
-      if requires_quoting?(lowercased)
-        "\"#{lowercased.gsub('"', '""')}\""
-      else
-        lowercased
-      end
+      escaped_identifier = Util.escape_double_quote(downcased_identifier)
+      Util.double_quote_string(escaped_identifier)
     end
 
     def requires_quoting?(identifier)

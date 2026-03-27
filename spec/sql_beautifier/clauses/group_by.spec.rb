@@ -19,5 +19,29 @@ RSpec.describe SqlBeautifier::Clauses::GroupBy do
         expect(output).to eq("group by status, department")
       end
     end
+
+    context "with a function expression" do
+      let(:value) { "date_trunc('month', created_at), status" }
+
+      it "keeps the function expression intact" do
+        expect(output).to eq("group by date_trunc('month', created_at), status")
+      end
+    end
+
+    context "with three columns" do
+      let(:value) { "year, quarter, department" }
+
+      it "keeps all columns inline" do
+        expect(output).to eq("group by year, quarter, department")
+      end
+    end
+
+    context "with extra whitespace" do
+      let(:value) { "  status , department  " }
+
+      it "strips surrounding whitespace" do
+        expect(output).to eq("group by status , department")
+      end
+    end
   end
 end

@@ -2,6 +2,14 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add JOIN support (inner, left, right, full outer, cross) with formatted continuation lines
+- Add automatic table aliasing using initials (e.g. `users` → `u`, `active_storage_blobs` → `asb`)
+- Add PascalCase table name formatting (e.g. `users` → `Users`, `user_sessions` → `User_Sessions`)
+- Add `table.column` → `alias.column` replacement across full output
+- Add DISTINCT and DISTINCT ON support in SELECT clause
+- Add AND/OR condition formatting in WHERE and HAVING clauses with per-line indentation
+- Add parenthesized condition group handling (inline when short, expanded when long)
+
 ## [0.1.4] - 2026-03-26
 
 - Update `bin/ci` and `bin/release` to use new formatting functions

@@ -4,7 +4,7 @@ RSpec.describe SqlBeautifier do
   describe ".call" do
     let(:output) { described_class.call(value) }
 
-    context "when the value is nil" do
+    context "with nil" do
       let(:value) { nil }
 
       it "returns nil" do
@@ -12,7 +12,7 @@ RSpec.describe SqlBeautifier do
       end
     end
 
-    context "when the value is an empty string" do
+    context "with an empty string" do
       let(:value) { "" }
 
       it "returns nil" do
@@ -20,7 +20,7 @@ RSpec.describe SqlBeautifier do
       end
     end
 
-    context "when the value is a whitespace-only string" do
+    context "with a whitespace-only string" do
       let(:value) { "   " }
 
       it "returns nil" do
@@ -28,12 +28,12 @@ RSpec.describe SqlBeautifier do
       end
     end
 
-    context "when the value is a valid query" do
+    context "with a valid query" do
       let(:value) { "SELECT id FROM users" }
 
       it "formats SQL" do
         expect(output).to include("select  id")
-        expect(output).to include("from    users")
+        expect(output).to include("from    Users u")
       end
     end
   end
