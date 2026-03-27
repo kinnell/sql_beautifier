@@ -14,12 +14,21 @@ readonly RED='\033[31m'
 
 readonly SUCCESS_INDICATOR="${GREEN}✓${RESET}"
 readonly FAILURE_INDICATOR="${RED}✗${RESET}"
+readonly WHITE='\033[1;37m'
 
+QUIET="false"
 RESULTS=()
+
+if [[ "${1:-}" == "--quiet" ]]; then
+  QUIET="true"
+fi
 
 ################################################################################
 ## Display Helpers
 ################################################################################
+
+function print_error()   { echo -e "${RED}✗ ERROR:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
+function print_success() { echo -e "${GREEN}✓ SUCCESS:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
 
 function print_heading() {
   local text="$1"
@@ -45,9 +54,21 @@ function print_result() {
   local passed="$3"
 
   if [[ "$passed" == "true" ]]; then
-    echo -e "\n${GREEN}${SUCCESS_INDICATOR} ${title} passed in ${duration}${RESET}\n"
+    print_success "${title} passed" "${duration}"
   else
-    echo -e "\n${RED}${FAILURE_INDICATOR} ${title} failed in ${duration}${RESET}\n"
+    print_error "${title} failed" "${duration}"
+  fi
+}
+
+function print_quiet_result() {
+  local title="$1"
+  local duration="$2"
+  local passed="$3"
+
+  if [[ "$passed" == "true" ]]; then
+    print_success "${title} passed" "${duration}"
+  else
+    print_error "${title} failed" "${duration}"
   fi
 }
 
@@ -60,20 +81,34 @@ function run_step() {
   shift
   local command="$*"
 
-  print_heading "$title" "$command"
-
-  local passed
+  local passed output
   local SECONDS=0
 
-  if eval "$command"; then
-    passed="true"
+  if [[ "$QUIET" == "true" ]]; then
+    if output=$(eval "$command" 2>&1); then
+      passed="true"
+    else
+      passed="false"
+    fi
+
+    print_quiet_result "$title" "${SECONDS}s" "$passed"
+
+    if [[ "$passed" == "false" ]]; then
+      echo "$output"
+    fi
   else
-    passed="false"
+    print_heading "$title" "$command"
+
+    if eval "$command"; then
+      passed="true"
+    else
+      passed="false"
+    fi
+
+    print_result "$title" "${SECONDS}s" "$passed"
   fi
 
   RESULTS+=("$passed")
-
-  print_result "$title" "${SECONDS}s" "$passed"
 }
 
 function all_passed() {
@@ -89,16 +124,24 @@ function all_passed() {
 ## Main
 ################################################################################
 
-print_banner "Continuous Integration" "Running tests and style checks"
+if [[ "$QUIET" == "false" ]]; then
+  print_banner "Continuous Integration" "Running tests and style checks"
+fi
 
 SECONDS=0
 
-run_step "Tests: RSpec" "bundle exec rspec"
-run_step "Style: Ruby" "bundle exec rubocop"
+run_step "RSpec test suite" "bundle exec rspec"
+run_step "RuboCop style checks" "bundle exec rubocop"
 
-if all_passed; then
-  print_result "Continuous Integration" "${SECONDS}s" "true"
+if [[ "$QUIET" == "true" ]]; then
+  if ! all_passed; then
+    exit 1
+  fi
 else
-  print_result "Continuous Integration" "${SECONDS}s" "false"
-  exit 1
+  if all_passed; then
+    print_result "Continuous Integration" "${SECONDS}s" "true"
+  else
+    print_result "Continuous Integration" "${SECONDS}s" "false"
+    exit 1
+  fi
 fi

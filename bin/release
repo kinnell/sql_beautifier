@@ -5,16 +5,31 @@ set -euo pipefail
 ## Constants
 ################################################################################
 
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly WHITE='\033[1;37m'
 readonly RESET='\033[0m'
+readonly BOLD='\033[1m'
+readonly DIM='\033[1;90m'
+
+readonly CYAN='\033[0;36m'
+readonly GREEN='\033[0;32m'
+readonly ORANGE='\033[38;5;214m'
+readonly RED='\033[0;31m'
+readonly WHITE='\033[1;37m'
+readonly YELLOW='\033[0;33m'
+readonly BLUE='\033[0;34m'
+readonly INDIGO='\033[38;5;141m'
+readonly BRIGHT_WHITE='\033[0;97m'
 
 readonly GEMSPEC=(*.gemspec)
 readonly GEM_NAME="${GEMSPEC%.gemspec}"
 readonly VERSION_FILE="lib/${GEM_NAME}/version.rb"
 readonly CHANGELOG_FILE="CHANGELOG.md"
 readonly UNRELEASED_HEADER="## [X.X.X] - YYYY-MM-DD"
+
+DRY_RUN="false"
+
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN="true"
+fi
 
 ################################################################################
 ## Dependency Checks
@@ -34,101 +49,150 @@ trap 'echo -e "\n${RED}✗ ERROR:${RESET} ${WHITE}Something went wrong!${RESET}"
 trap 'echo -e "\n${RED}✗ ERROR:${RESET} ${WHITE}Process interrupted.${RESET}" >&2; exit 1' INT TERM
 
 ################################################################################
-## Formatting Helpers
+## Formatting
 ################################################################################
 
-function print_error()   { echo -e "${RED}✗ ERROR:${RESET} ${WHITE}${1}${RESET}"; }
-function print_success() { echo -e "${GREEN}✓${RESET} ${1}"; }
+function print_error()   { echo -e "${RED}✗ ERROR:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
+function print_success() { echo -e "${GREEN}✓ SUCCESS:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
+function print_warn()    { echo -e "${ORANGE}⚠ WARNING:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
+function print_info()    { echo -e "${CYAN}ℹ INFO:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
+function print_skipped() { echo -e "${DIM}▸ SKIPPED:${RESET} ${1}${2:+ ${DIM}(${2})${RESET}}"; }
+
+function fmt_gem_name() { echo -ne "${INDIGO}◆ $1${RESET}"; }
+function fmt_version()  { echo -ne "${YELLOW}v$1${RESET}"; }
+function fmt_file()     { echo -ne "${CYAN}$1${RESET}"; }
 
 ################################################################################
 ## Helpers
 ################################################################################
 
-function current_version() {
+function get_current_version() {
   sed -n 's/.*VERSION = "\([^"]*\)".*/\1/p' "${VERSION_FILE}"
 }
 
-function prompt_version() {
+function guess_next_patch_version() {
   local current="$1"
+  local major minor patch
+
+  IFS='.' read -r major minor patch <<< "$current"
+  echo "${major}.${minor}.$((patch + 1))"
+}
+
+function prompt_next_version() {
+  local current="$1"
+  local default_next
+  default_next=$(guess_next_patch_version "$current")
 
   gum input \
     --header "Current version: ${current}" \
-    --placeholder "Enter new version (e.g. 0.5.0)" \
-    --value "${current}"
+    --placeholder "Enter new version (e.g. ${default_next})" \
+    --value "${default_next}"
 }
 
 function update_version_file() {
-  local old_version="$1"
-  local new_version="$2"
+  local current_version="$1"
+  local next_version="$2"
+  local message="Bumped version in $(fmt_file "${VERSION_FILE}") to $(fmt_version "${next_version}")"
 
-  perl -i -pe "s/VERSION = \"\\Q${old_version}\\E\"/VERSION = \"${new_version}\"/" "${VERSION_FILE}"
+  if [[ "$DRY_RUN" == "true" ]]; then
+    print_skipped "$message"
+    return
+  fi
+
+  perl -i -pe "s/VERSION = \"\\Q${current_version}\\E\"/VERSION = \"${next_version}\"/" "${VERSION_FILE}"
+  print_success "$message"
 }
 
 function update_changelog() {
-  local new_version="$1"
+  local next_version="$1"
+  local message="Added $(fmt_version "${next_version}") release entry to $(fmt_file "${CHANGELOG_FILE}")"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    print_skipped "$message"
+    return
+  fi
+
   local today
   today=$(date +%Y-%m-%d)
 
-  perl -i -pe "s/\\Q${UNRELEASED_HEADER}\\E/${UNRELEASED_HEADER}\n\n## [${new_version}] - ${today}/" "${CHANGELOG_FILE}"
+  perl -i -pe "s/\\Q${UNRELEASED_HEADER}\\E/${UNRELEASED_HEADER}\n\n## [${next_version}] - ${today}/" "${CHANGELOG_FILE}"
+  print_success "$message"
 }
 
 function run_ci() {
-  bin/ci
+  bin/ci --quiet
 }
 
 function commit_and_push() {
-  local new_version="$1"
+  local next_version="$1"
+  local message="Committed version bump and pushed to remote"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    print_skipped "$message"
+    return
+  fi
 
   git add "${VERSION_FILE}" "${CHANGELOG_FILE}"
-  git commit -m "Bump version to ${new_version}"
+  git commit -m "Bump version to ${next_version}"
   git push
+  print_success "$message"
 }
 
 function tag_release() {
-  local new_version="$1"
-  local tag="v${new_version}"
+  local next_version="$1"
+  local tag="v${next_version}"
+  local message="Created and pushed tag $(fmt_version "${next_version}")"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    print_skipped "$message"
+    return
+  fi
 
   git tag -a "${tag}" -m "Release ${tag}"
   git push origin "${tag}"
+  print_success "$message"
 }
 
 function build_and_publish_gem() {
-  local new_version="$1"
-  local gem_file="${GEM_NAME}-${new_version}.gem"
+  local next_version="$1"
+  local gem_file="${GEM_NAME}-${next_version}.gem"
+  local message="Built and published $(fmt_gem_name "${GEM_NAME}") $(fmt_version "${next_version}") to RubyGems"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    print_skipped "$message"
+    return
+  fi
 
   gem build "${GEMSPEC}"
   gem push "${gem_file}"
   rm -f "${gem_file}"
+  print_success "$message"
 }
 
 ################################################################################
 ## Execution
 ################################################################################
 
-old_version=$(current_version)
-new_version=$(prompt_version "${old_version}")
+current_version=$(get_current_version)
+next_version=$(prompt_next_version "${current_version}")
 
-if [[ "${old_version}" == "${new_version}" ]]; then
+if [[ "${current_version}" == "${next_version}" ]]; then
   print_error "Version unchanged"
   exit 1
 fi
 
-gum confirm "Release ${GEM_NAME} v${new_version}?" || exit 0
+echo ""
 
-update_version_file "${old_version}" "${new_version}"
-print_success "Updated ${VERSION_FILE} to ${new_version}"
+if [[ "$DRY_RUN" == "true" ]]; then
+  print_warn "Dry run for $(fmt_gem_name "${GEM_NAME}") $(fmt_version "${next_version}")"
+  echo ""
+else
+  gum confirm "Release $(fmt_gem_name "${GEM_NAME}") $(fmt_version "${next_version}")?" || exit 0
+fi
 
-update_changelog "${new_version}"
-print_success "Updated ${CHANGELOG_FILE} for ${new_version}"
-
+update_version_file "${current_version}" "${next_version}"
+update_changelog "${next_version}"
 run_ci
-print_success "CI passed"
-
-commit_and_push "${new_version}"
-print_success "Committed and pushed"
-
-tag_release "${new_version}"
-print_success "Tagged v${new_version}"
-
-build_and_publish_gem "${new_version}"
-print_success "Released ${GEM_NAME} v${new_version}"
+commit_and_push "${next_version}"
+tag_release "${next_version}"
+build_and_publish_gem "${next_version}"
