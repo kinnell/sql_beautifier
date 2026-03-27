@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.2.0] - 2026-03-27
+
 - Add JOIN support (inner, left, right, full outer, cross) with formatted continuation lines
 - Add automatic table aliasing using initials (e.g. `users` → `u`, `active_storage_blobs` → `asb`)
 - Add PascalCase table name formatting (e.g. `users` → `Users`, `user_sessions` → `User_Sessions`)
