@@ -6,8 +6,9 @@ module SqlBeautifier
       new(value).call
     end
 
-    def initialize(value)
+    def initialize(value, depth: 0)
       @value = value
+      @depth = depth
     end
 
     def call
@@ -31,9 +32,10 @@ module SqlBeautifier
       append_clause!(:order_by, Clauses::OrderBy)
       append_clause!(:limit, Clauses::Limit)
 
-      output = @parts.join("\n\n")
+      output = @parts.join(clause_separator)
       return "#{@normalized_value}\n" if output.empty?
 
+      output = SubqueryFormatter.format(output, @depth)
       output = @table_registry.apply_aliases(output) if @table_registry
       "#{output}\n"
     end
@@ -52,6 +54,49 @@ module SqlBeautifier
       return unless value.present?
 
       @parts << Clauses::From.call(value, table_registry: @table_registry)
+    end
+
+    def clause_separator
+      return "\n\n" if SqlBeautifier.config_for(:clause_spacing_mode) == :spacious
+      return "\n\n" unless compact_query?
+
+      "\n"
+    end
+
+    def compact_query?
+      compact_clause_set? && single_select_column? && single_from_table? && one_or_fewer_conditions?
+    end
+
+    def compact_clause_set?
+      clause_keys = @clauses.keys
+      allowed_keys = %i[select from where order_by limit]
+
+      clause_keys.all? { |key| allowed_keys.include?(key) } && clause_keys.include?(:select) && clause_keys.include?(:from)
+    end
+
+    def single_select_column?
+      select_value = @clauses[:select]
+      return false unless select_value.present?
+
+      formatted_select = Clauses::Select.call(select_value)
+      formatted_select.lines.length == 1
+    end
+
+    def single_from_table?
+      from_value = @clauses[:from]
+      return false unless from_value.present?
+
+      join_keywords = Constants::JOIN_KEYWORDS_BY_LENGTH.any? { |keyword| Tokenizer.find_top_level_keyword(from_value, keyword) }
+      return false if join_keywords
+
+      !from_value.match?(%r{,})
+    end
+
+    def one_or_fewer_conditions?
+      where_value = @clauses[:where]
+      return true unless where_value.present?
+
+      Tokenizer.split_top_level_conditions(where_value).length <= 1
     end
   end
 end

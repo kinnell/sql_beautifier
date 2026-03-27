@@ -4,10 +4,10 @@ module SqlBeautifier
   module Clauses
     class ConditionClause < Base
       def call
-        return "#{self.class::KEYWORD_PREFIX}#{@value.strip}" unless multiple_conditions?
+        return "#{keyword_prefix}#{@value.strip}" unless multiple_conditions?
 
-        formatted_conditions = ConditionFormatter.format(@value, indent_width: Constants::KEYWORD_COLUMN_WIDTH)
-        formatted_conditions.sub(Constants::LEADING_KEYWORD_INDENT_PATTERN, self.class::KEYWORD_PREFIX)
+        formatted_conditions = ConditionFormatter.format(@value, indent_width: SqlBeautifier.config_for(:keyword_column_width))
+        formatted_conditions.sub(continuation_indent, keyword_prefix)
       end
 
       private

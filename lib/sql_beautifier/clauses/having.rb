@@ -3,7 +3,7 @@
 module SqlBeautifier
   module Clauses
     class Having < ConditionClause
-      KEYWORD_PREFIX = "having  "
+      KEYWORD = "having"
     end
   end
 end

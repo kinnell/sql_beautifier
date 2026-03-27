@@ -3,8 +3,7 @@
 module SqlBeautifier
   module Clauses
     class Select < Base
-      KEYWORD_PREFIX = "select  "
-      CONTINUATION_INDENTATION = "        "
+      KEYWORD = "select"
       DISTINCT_ON_PARENTHESIS_PATTERN = %r{distinct on\s*\(}
       DISTINCT_ON_PATTERN = %r{distinct on }
       LEADING_COMMA_PATTERN = %r{\A,\s*}
@@ -22,15 +21,15 @@ module SqlBeautifier
       private
 
       def keyword_line(column)
-        "#{KEYWORD_PREFIX}#{column.strip}"
+        "#{keyword_prefix}#{column.strip}"
       end
 
       def continuation_line(column)
-        "#{CONTINUATION_INDENTATION}#{column.strip}"
+        "#{continuation_indent}#{column.strip}"
       end
 
       def format_with_prefix(prefix, columns)
-        first_line = "#{KEYWORD_PREFIX}#{prefix}"
+        first_line = "#{keyword_prefix}#{prefix}"
         column_lines = columns.map { |column| continuation_line(column) }
 
         "#{first_line}\n#{column_lines.join(",\n")}"

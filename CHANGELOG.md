@@ -2,6 +2,12 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add configuration system with `SqlBeautifier.configure` block and `SqlBeautifier.reset_configuration!`
+- Add configurable keyword case (`:lower` / `:upper`), keyword column width, indent spaces, table name format (`:pascal_case` / `:lowercase`), inline group threshold, and alias strategy (`:initials` / `:none` / callable)
+- Add semicolon stripping in normalizer (trailing `;` removed before formatting)
+- Add comment stripping in normalizer (`--` line comments and `/* */` block comments, string-aware)
+- Add subquery formatting with recursive indentation (`(select ...)` expanded to multiline)
+
 ## [0.2.0] - 2026-03-27
 
 - Add JOIN support (inner, left, right, full outer, cross) with formatted continuation lines

@@ -171,5 +171,157 @@ RSpec.describe SqlBeautifier::Normalizer do
         expect(output).to eq("select 'A''B' from users")
       end
     end
+
+    ############################################################################
+    ## Semicolon Stripping
+    ############################################################################
+
+    context "with a trailing semicolon" do
+      let(:value) { "SELECT id FROM users;" }
+
+      it "removes the trailing semicolon" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with a trailing semicolon and whitespace" do
+      let(:value) { "SELECT id FROM users;  \n  " }
+
+      it "removes the trailing semicolon and whitespace" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with a trailing semicolon before a line comment" do
+      let(:value) { "SELECT 1; -- done" }
+
+      it "removes the semicolon after comment stripping" do
+        expect(output).to eq("select 1")
+      end
+    end
+
+    context "with multiple trailing semicolons" do
+      let(:value) { "SELECT 1;;" }
+
+      it "removes only the last semicolon" do
+        expect(output).to eq("select 1;")
+      end
+    end
+
+    context "with a semicolon inside a string literal" do
+      let(:value) { "SELECT * FROM users WHERE name = 'test;value'" }
+
+      it "preserves the semicolon inside the string" do
+        expect(output).to eq("select * from users where name = 'test;value'")
+      end
+    end
+
+    context "with no semicolon" do
+      let(:value) { "SELECT 1" }
+
+      it "returns unchanged" do
+        expect(output).to eq("select 1")
+      end
+    end
+
+    ############################################################################
+    ## Comment Stripping
+    ############################################################################
+
+    context "with a -- line comment" do
+      let(:value) { "SELECT id -- get the id\nFROM users" }
+
+      it "removes the line comment" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with a -- comment at end of query" do
+      let(:value) { "SELECT id FROM users -- done" }
+
+      it "removes the trailing comment" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with -- inside a string literal" do
+      let(:value) { "SELECT * FROM users WHERE name = 'test--value'" }
+
+      it "preserves -- inside the string" do
+        expect(output).to eq("select * from users where name = 'test--value'")
+      end
+    end
+
+    context "with -- inside a double-quoted identifier" do
+      let(:value) { 'SELECT "User--Name" FROM users' }
+
+      it "preserves -- inside the identifier" do
+        expect(output).to eq('select "user--name" from users')
+      end
+    end
+
+    context "with a /* */ block comment" do
+      let(:value) { "SELECT /* columns */ id FROM users" }
+
+      it "removes the block comment" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with a /* */ block comment between tokens" do
+      let(:value) { "SELECT/*columns*/id FROM users" }
+
+      it "preserves token separation after stripping the comment" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with a /* */ block comment spanning content" do
+      let(:value) { "SELECT id /* , name, email */ FROM users" }
+
+      it "removes the spanning block comment" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with /* */ inside a string literal" do
+      let(:value) { "SELECT * FROM users WHERE name = 'test/**/value'" }
+
+      it "preserves /* */ inside the string" do
+        expect(output).to eq("select * from users where name = 'test/**/value'")
+      end
+    end
+
+    context "with /* */ inside a double-quoted identifier" do
+      let(:value) { 'SELECT "Cost/*Center*/Code" FROM users' }
+
+      it "preserves /* */ inside the identifier" do
+        expect(output).to eq('select "cost/*center*/code" from users')
+      end
+    end
+
+    context "with multiple comments" do
+      let(:value) { "SELECT /* a */ id -- get id\nFROM users" }
+
+      it "strips all comments" do
+        expect(output).to eq("select id from users")
+      end
+    end
+
+    context "with comment-only input" do
+      let(:value) { "-- just a comment" }
+
+      it "returns nil" do
+        expect(output).to be_nil
+      end
+    end
+
+    context "with mixed -- and /* */ comments" do
+      let(:value) { "/* header */ SELECT id -- inline\nFROM /* source */ users" }
+
+      it "strips all comments" do
+        expect(output).to eq("select id from users")
+      end
+    end
   end
 end

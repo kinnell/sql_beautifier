@@ -4,6 +4,10 @@ module SqlBeautifier
   module Util
     module_function
 
+    def whitespace(length)
+      " " * length
+    end
+
     def upper_pascal_case(name)
       name.split("_").map(&:capitalize).join("_")
     end
@@ -29,6 +33,35 @@ module SqlBeautifier
       return if value.nil?
 
       value.gsub(Constants::DOUBLE_QUOTE, Constants::ESCAPED_DOUBLE_QUOTE)
+    end
+
+    def keyword_padding(keyword)
+      formatted_keyword = format_keyword(keyword)
+      padding_width = [SqlBeautifier.config_for(:keyword_column_width) - formatted_keyword.length, 1].max
+
+      "#{formatted_keyword}#{whitespace(padding_width)}"
+    end
+
+    def continuation_padding
+      whitespace(SqlBeautifier.config_for(:keyword_column_width))
+    end
+
+    def format_keyword(keyword)
+      case SqlBeautifier.config_for(:keyword_case)
+      when :upper
+        keyword.upcase
+      else
+        keyword.downcase
+      end
+    end
+
+    def format_table_name(name)
+      case SqlBeautifier.config_for(:table_name_format)
+      when :lowercase
+        name.downcase
+      else
+        upper_pascal_case(name)
+      end
     end
   end
 end
