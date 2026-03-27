@@ -7,6 +7,7 @@ module SqlBeautifier
     def initialize(from_content)
       @from_content = from_content
       @table_map = {}
+      @alias_strategy = SqlBeautifier.config_for(:alias_strategy)
       build!
     end
 
@@ -15,6 +16,8 @@ module SqlBeautifier
     end
 
     def apply_aliases(text)
+      return text if @table_map.empty?
+
       output = +""
       position = 0
 
@@ -48,10 +51,19 @@ module SqlBeautifier
 
     def build!
       table_entries = extract_table_entries(@from_content)
-      initials_occurrence_counts = count_initials_occurrences(table_entries)
-      used_aliases = []
 
-      assign_aliases!(table_entries, initials_occurrence_counts, used_aliases)
+      if @alias_strategy == :none
+        table_entries.each do |table_entry|
+          next unless table_entry[:explicit_alias]
+
+          @table_map[table_entry[:table_name]] = table_entry[:explicit_alias]
+        end
+      else
+        initials_occurrence_counts = count_initials_occurrences(table_entries)
+        used_aliases = []
+        assign_aliases!(table_entries, initials_occurrence_counts, used_aliases)
+      end
+
       @tables_by_descending_length = @table_map.keys.sort_by { |name| -name.length }.freeze
     end
 
@@ -163,6 +175,8 @@ module SqlBeautifier
     end
 
     def table_initials(table_name)
+      return @alias_strategy.call(table_name) if @alias_strategy.respond_to?(:call)
+
       table_name.split("_").map { |segment| segment[0] }.join
     end
 

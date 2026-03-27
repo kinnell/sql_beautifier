@@ -9,7 +9,7 @@ module SqlBeautifier
       return text.strip if conditions.length <= 1 && !parse_condition_group(conditions.dig(0, 1))
 
       conditions = flatten_same_conjunction_groups(conditions)
-      indentation = " " * indent_width
+      indentation = Util.whitespace(indent_width)
       lines = []
 
       conditions.each_with_index do |(conjunction, condition_text), index|
@@ -92,11 +92,11 @@ module SqlBeautifier
       return condition_text unless inner_conditions
 
       inline_version = rebuild_inline(inner_conditions)
-      return inline_version if inline_version.length <= Constants::INLINE_GROUP_THRESHOLD
+      return inline_version if inline_version.length <= SqlBeautifier.config_for(:inline_group_threshold)
 
       inner_content = Util.strip_outer_parentheses(condition_text.strip)
       formatted_inner_content = format(inner_content, indent_width: indent_width + 4)
-      indentation = " " * indent_width
+      indentation = Util.whitespace(indent_width)
 
       "(\n#{formatted_inner_content}\n#{indentation})"
     end

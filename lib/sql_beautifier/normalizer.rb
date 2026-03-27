@@ -18,6 +18,11 @@ module SqlBeautifier
       @source = @value.strip
       return unless @source.present?
 
+      @source = strip_comments(@source)
+      @source = strip_trailing_semicolons(@source)
+      @source = @source.strip
+      return unless @source.present?
+
       @output = +""
       @position = 0
 
@@ -109,6 +114,72 @@ module SqlBeautifier
 
     def requires_quoting?(identifier)
       identifier !~ SAFE_UNQUOTED_IDENTIFIER
+    end
+
+    def strip_trailing_semicolons(sql)
+      sql.sub(%r{;[[:space:]]*\z}, "")
+    end
+
+    def strip_comments(sql)
+      output = +""
+      position = 0
+      in_single_quoted_string = false
+      in_double_quoted_identifier = false
+
+      while position < sql.length
+        character = sql[position]
+
+        if in_single_quoted_string
+          output << character
+
+          if character == Constants::SINGLE_QUOTE && sql[position + 1] == Constants::SINGLE_QUOTE
+            position += 1
+            output << sql[position]
+          elsif character == Constants::SINGLE_QUOTE
+            in_single_quoted_string = false
+          end
+
+          position += 1
+          next
+        end
+
+        if in_double_quoted_identifier
+          output << character
+
+          if character == Constants::DOUBLE_QUOTE && sql[position + 1] == Constants::DOUBLE_QUOTE
+            position += 1
+            output << sql[position]
+          elsif character == Constants::DOUBLE_QUOTE
+            in_double_quoted_identifier = false
+          end
+
+          position += 1
+          next
+        end
+
+        if character == Constants::SINGLE_QUOTE
+          in_single_quoted_string = true
+          output << character
+          position += 1
+        elsif character == Constants::DOUBLE_QUOTE
+          in_double_quoted_identifier = true
+          output << character
+          position += 1
+        elsif character == "-" && sql[position + 1] == "-"
+          position += 2
+          position += 1 while position < sql.length && sql[position] != "\n"
+        elsif character == "/" && sql[position + 1] == "*"
+          output << " " unless output.empty? || output[-1] =~ Constants::WHITESPACE_CHARACTER_REGEX
+          position += 2
+          position += 1 while position < sql.length && !(sql[position] == "*" && sql[position + 1] == "/")
+          position += 2 if position < sql.length
+        else
+          output << character
+          position += 1
+        end
+      end
+
+      output
     end
   end
 end

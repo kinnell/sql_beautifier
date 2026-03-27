@@ -3,10 +3,16 @@
 module SqlBeautifier
   module Clauses
     class Limit < Base
-      KEYWORD_PREFIX = "limit "
+      KEYWORD = "limit"
 
       def call
-        "#{KEYWORD_PREFIX}#{@value.strip}"
+        "#{keyword_prefix}#{@value.strip}"
+      end
+
+      private
+
+      def keyword_prefix
+        "#{Util.format_keyword(KEYWORD)} "
       end
     end
   end

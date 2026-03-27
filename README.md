@@ -48,16 +48,16 @@ where   active = true
 order by name
 ```
 
-Single-word keywords are lowercased and padded so their clause bodies start at an 8-character column. Multi-word clauses such as `order by` and `group by`, and short clauses like `limit`, use a single space between the keyword and the clause body instead of padding. Each clause is separated by a blank line. Multi-column SELECT lists place each column on its own line with continuation indentation. Table names are PascalCased and automatically aliased.
+Single-word keywords are lowercased and padded so their clause bodies start at an 8-character column. Multi-word clauses such as `order by` and `group by`, and short clauses like `limit`, use a single space between the keyword and the clause body instead of padding. Clause spacing is compact by default for simple one-column / one-table / one-condition queries, and otherwise uses blank lines between top-level clauses. Multi-column SELECT lists place each column on its own line with continuation indentation. Table names are PascalCased and automatically aliased.
 
 ### Table Aliasing
 
 Tables are automatically aliased using their initials. Underscore-separated table names use the first letter of each segment:
 
-| Table Name | PascalCase | Alias |
-| --- | --- | --- |
-| `users` | `Users` | `u` |
-| `active_storage_blobs` | `Active_Storage_Blobs` | `asb` |
+| Table Name                 | PascalCase                 | Alias |
+| -------------------------- | -------------------------- | ----- |
+| `users`                    | `Users`                    | `u`   |
+| `active_storage_blobs`     | `Active_Storage_Blobs`     | `asb` |
 | `person_event_invitations` | `Person_Event_Invitations` | `pei` |
 
 All `table.column` references throughout the query are replaced with `alias.column`:
@@ -219,11 +219,8 @@ Produces:
 
 ```sql
 select  id
-
 from    Users u
-
 order by created_at desc
-
 limit 25
 ```
 
@@ -261,6 +258,87 @@ select  user_id,
         full_name
 
 from    Users u
+```
+
+### Subqueries
+
+Subqueries are automatically detected and recursively formatted with indentation:
+
+```ruby
+SqlBeautifier.call("SELECT id FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > 100)")
+```
+
+Produces:
+
+```sql
+select  id
+from    Users u
+where   id in (
+            select  user_id
+            from    Orders o
+            where   total > 100
+        )
+```
+
+Nested subqueries increase indentation at each level.
+
+### Comments and Semicolons
+
+SQL comments (`--` line comments and `/* */` block comments) and trailing semicolons are automatically stripped during normalization. Comments inside string literals are preserved:
+
+```ruby
+SqlBeautifier.call("SELECT id /* primary key */ FROM users -- main table\nWHERE active = true;")
+```
+
+Produces:
+
+```sql
+select  id
+from    Users u
+where   active = true
+```
+
+### Configuration
+
+Customize formatting behavior with `SqlBeautifier.configure`:
+
+```ruby
+SqlBeautifier.configure do |config|
+  config.keyword_case = :upper           # :lower (default), :upper
+  config.keyword_column_width = 10       # default: 8
+  config.indent_spaces = 4               # default: 4
+  config.clause_spacing_mode = :spacious # :compact (default), :spacious
+  config.table_name_format = :lowercase  # :pascal_case (default), :lowercase
+  config.inline_group_threshold = 80     # default: 100
+  config.alias_strategy = :none          # :initials (default), :none, or a callable
+end
+```
+
+#### Clause Spacing Modes
+
+- `:compact` (default) keeps top-level clauses on single newlines only when the query is simple:
+  - exactly one SELECT column
+  - exactly one FROM table (no JOINs)
+  - zero or one top-level WHERE condition
+  - only `select`, `from`, optional `where`, optional `order by`, and optional `limit`
+- `:spacious` always separates top-level clauses with blank lines
+
+Reset to defaults:
+
+```ruby
+SqlBeautifier.reset_configuration!
+```
+
+#### Alias Strategies
+
+- `:initials` (default) — automatic aliases using table initials (`users` → `u`, `active_storage_blobs` → `asb`)
+- `:none` — no automatic aliases (explicit aliases in the SQL are still preserved)
+- Callable — provide a proc/lambda for custom alias generation:
+
+```ruby
+SqlBeautifier.configure do |config|
+  config.alias_strategy = ->(table_name) { "t_#{table_name[0..2]}" }
+end
 ```
 
 ### Callable Interface

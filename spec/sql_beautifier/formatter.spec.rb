@@ -32,7 +32,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users" }
 
       it "returns the formatted query" do
-        expect(output).to eq("select  id\n\nfrom    Users u\n")
+        expect(output).to eq("select  id\nfrom    Users u\n")
       end
     end
 
@@ -60,8 +60,8 @@ RSpec.describe SqlBeautifier::Formatter do
         expect(output).to include("limit 10")
       end
 
-      it "separates limit with a blank line" do
-        expect(output).to include("Users u\n\nlimit")
+      it "keeps compact spacing for a simple query with limit" do
+        expect(output).to include("from    Users u\nlimit 10")
       end
     end
 
@@ -125,13 +125,14 @@ RSpec.describe SqlBeautifier::Formatter do
     context "when the value has a subquery in the where clause" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)" }
 
-      it "keeps the subquery intact in the where clause" do
+      it "formats the subquery with indentation" do
         expect(output).to eq(<<~SQL)
           select  id
-
           from    Users u
-
-          where   id in (select user_id from orders)
+          where   id in (
+                      select  user_id
+                      from    Orders o
+                  )
         SQL
       end
     end
@@ -139,10 +140,17 @@ RSpec.describe SqlBeautifier::Formatter do
     context "when the value has a subquery in the select clause" do
       let(:value) { "SELECT id, (SELECT count(*) FROM orders WHERE orders.user_id = users.id) FROM users" }
 
-      it "keeps the subquery intact in the select clause" do
-        expect(output).to include("select  id,")
-        expect(output).to include("(select count(*) from orders where orders.user_id = u.id)")
-        expect(output).to include("from    Users u")
+      it "formats the subquery with indentation" do
+        expect(output).to eq(<<~SQL)
+          select  id,
+                  (
+              select  count(*)
+              from    Orders o
+              where   o.user_id = u.id
+          )
+
+          from    Users u
+        SQL
       end
     end
 
@@ -421,6 +429,161 @@ RSpec.describe SqlBeautifier::Formatter do
           order by count(*) desc
 
           limit 10
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## Subquery Integration
+    ############################################################################
+
+    context "with a nested subquery" do
+      let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders WHERE product_id IN (SELECT id FROM products WHERE active = true))" }
+
+      it "formats both levels of subqueries" do
+        expect(output).to include("where   id in (")
+        expect(output).to include("  select  user_id")
+        expect(output).to include("  where   product_id in (")
+        expect(output).to include("    select  id")
+      end
+    end
+
+    context "with a subquery and its own JOIN" do
+      let(:value) { "SELECT id FROM users WHERE id IN (SELECT orders.user_id FROM orders INNER JOIN products ON products.id = orders.product_id)" }
+
+      it "formats the subquery with JOIN indentation" do
+        expect(output).to include("where   id in (")
+        expect(output).to include("  select  o.user_id")
+        expect(output).to include("  from    Orders o")
+        expect(output).to include("          inner join Products p on p.id = o.product_id")
+      end
+    end
+
+    ############################################################################
+    ## Configuration Integration
+    ############################################################################
+
+    context "with :keyword_column_width set to 10" do
+      let(:value) { "SELECT id, name FROM users WHERE active = true" }
+
+      before { SqlBeautifier.configure { |config| config.keyword_column_width = 10 } }
+
+      it "pads keywords to the custom width" do
+        expect(output).to include("select    id,")
+        expect(output).to include("          name")
+        expect(output).to include("from      Users u")
+        expect(output).to include("where     active = true")
+      end
+    end
+
+    context "with :table_name_format set to :lowercase" do
+      let(:value) { "SELECT id FROM users INNER JOIN orders ON orders.user_id = users.id" }
+
+      before { SqlBeautifier.configure { |config| config.table_name_format = :lowercase } }
+
+      it "produces lowercase table names" do
+        expect(output).to include("from    users u")
+        expect(output).to include("inner join orders o")
+      end
+    end
+
+    context "with :alias_strategy set to :none" do
+      let(:value) { "SELECT users.id FROM users WHERE users.active = true" }
+
+      before { SqlBeautifier.configure { |config| config.alias_strategy = :none } }
+
+      it "produces output without aliases" do
+        expect(output).to eq(<<~SQL)
+          select  users.id
+          from    Users
+          where   users.active = true
+        SQL
+      end
+    end
+
+    context "with a callable :alias_strategy" do
+      let(:value) { "SELECT users.id FROM users WHERE users.active = true" }
+
+      before do
+        SqlBeautifier.configure do |config|
+          config.alias_strategy = ->(table_name) { "tbl_#{table_name[0]}" }
+        end
+      end
+
+      it "uses the callable for alias generation" do
+        expect(output).to include("from    Users tbl_u")
+        expect(output).to include("tbl_u.id")
+        expect(output).to include("tbl_u.active")
+      end
+    end
+
+    ############################################################################
+    ## Normalizer Integration
+    ############################################################################
+
+    context "with a trailing semicolon" do
+      let(:value) { "SELECT id FROM users;" }
+
+      it "strips the semicolon and formats normally" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with SQL comments" do
+      let(:value) { "SELECT id /* primary key */ FROM users -- the table\nWHERE active = true" }
+
+      it "strips comments and formats normally" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+          where   active = true
+        SQL
+      end
+    end
+
+    context "with :clause_spacing_mode set to :spacious" do
+      let(:value) { "SELECT id FROM users WHERE active = true" }
+
+      before { SqlBeautifier.configure { |config| config.clause_spacing_mode = :spacious } }
+
+      it "keeps blank lines between all top-level clauses" do
+        expect(output).to eq(<<~SQL)
+          select  id
+
+          from    Users u
+
+          where   active = true
+        SQL
+      end
+    end
+
+    context "with compact spacing defaults and multiple where conditions" do
+      let(:value) { "SELECT id FROM users WHERE active = true AND verified = true" }
+
+      it "keeps blank lines between clauses because the where clause is not simple" do
+        expect(output).to eq(<<~SQL)
+          select  id
+
+          from    Users u
+
+          where   active = true
+                  and verified = true
+        SQL
+      end
+    end
+
+    context "with compact spacing defaults and order by and limit" do
+      let(:value) { "SELECT id FROM users ORDER BY created_at DESC LIMIT 25" }
+
+      it "keeps all top-level clauses on single newlines" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+          order by created_at desc
+          limit 25
         SQL
       end
     end

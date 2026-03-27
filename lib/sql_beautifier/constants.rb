@@ -29,11 +29,6 @@ module SqlBeautifier
     CONJUNCTIONS = %w[and or].freeze
     BETWEEN_KEYWORD = "between"
 
-    INLINE_GROUP_THRESHOLD = 100
-    KEYWORD_COLUMN_WIDTH = 8
-
-    LEADING_KEYWORD_INDENT_PATTERN = %r{\A#{' ' * KEYWORD_COLUMN_WIDTH}}
-
     OPEN_PARENTHESIS = "("
     CLOSE_PARENTHESIS = ")"
     COMMA = ","

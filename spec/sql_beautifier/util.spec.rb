@@ -264,4 +264,122 @@ RSpec.describe SqlBeautifier::Util do
       end
     end
   end
+
+  ############################################################################
+  ## .keyword_padding
+  ############################################################################
+
+  describe ".keyword_padding" do
+    context "with default configuration" do
+      it "pads 'select' to 8 characters" do
+        expect(described_class.keyword_padding("select")).to eq("select  ")
+      end
+
+      it "pads 'from' to 8 characters" do
+        expect(described_class.keyword_padding("from")).to eq("from    ")
+      end
+
+      it "pads 'where' to 8 characters" do
+        expect(described_class.keyword_padding("where")).to eq("where   ")
+      end
+
+      it "pads 'having' to 8 characters" do
+        expect(described_class.keyword_padding("having")).to eq("having  ")
+      end
+
+      it "gives 'order by' a single trailing space" do
+        expect(described_class.keyword_padding("order by")).to eq("order by ")
+      end
+
+      it "gives 'group by' a single trailing space" do
+        expect(described_class.keyword_padding("group by")).to eq("group by ")
+      end
+    end
+
+    context "with custom :keyword_column_width" do
+      before { SqlBeautifier.configure { |config| config.keyword_column_width = 10 } }
+
+      it "pads 'select' to 10 characters" do
+        expect(described_class.keyword_padding("select")).to eq("select    ")
+      end
+
+      it "pads 'from' to 10 characters" do
+        expect(described_class.keyword_padding("from")).to eq("from      ")
+      end
+    end
+
+    context "with :keyword_case set to :upper" do
+      before { SqlBeautifier.configure { |config| config.keyword_case = :upper } }
+
+      it "uppercases the keyword" do
+        expect(described_class.keyword_padding("select")).to eq("SELECT  ")
+      end
+    end
+  end
+
+  ############################################################################
+  ## .continuation_padding
+  ############################################################################
+
+  describe ".continuation_padding" do
+    it "returns spaces equal to :keyword_column_width" do
+      expect(described_class.continuation_padding).to eq("        ")
+    end
+
+    context "with custom :keyword_column_width" do
+      before { SqlBeautifier.configure { |config| config.keyword_column_width = 10 } }
+
+      it "returns spaces equal to the custom width" do
+        expect(described_class.continuation_padding).to eq("          ")
+      end
+    end
+  end
+
+  ############################################################################
+  ## .format_keyword
+  ############################################################################
+
+  describe ".format_keyword" do
+    context "with :lower keyword_case" do
+      it "lowercases the keyword" do
+        expect(described_class.format_keyword("SELECT")).to eq("select")
+      end
+    end
+
+    context "with :upper keyword_case" do
+      before { SqlBeautifier.configure { |config| config.keyword_case = :upper } }
+
+      it "uppercases the keyword" do
+        expect(described_class.format_keyword("select")).to eq("SELECT")
+      end
+    end
+  end
+
+  ############################################################################
+  ## .format_table_name
+  ############################################################################
+
+  describe ".format_table_name" do
+    context "with :pascal_case table_name_format" do
+      it "PascalCases underscore-separated names" do
+        expect(described_class.format_table_name("user_sessions")).to eq("User_Sessions")
+      end
+
+      it "capitalizes single-word names" do
+        expect(described_class.format_table_name("users")).to eq("Users")
+      end
+    end
+
+    context "with :lowercase table_name_format" do
+      before { SqlBeautifier.configure { |config| config.table_name_format = :lowercase } }
+
+      it "lowercases the table name" do
+        expect(described_class.format_table_name("Users")).to eq("users")
+      end
+
+      it "lowercases underscore-separated names" do
+        expect(described_class.format_table_name("User_Sessions")).to eq("user_sessions")
+      end
+    end
+  end
 end

@@ -3,10 +3,10 @@
 module SqlBeautifier
   module Clauses
     class OrderBy < Base
-      KEYWORD_PREFIX = "order by "
+      KEYWORD = "order by"
 
       def call
-        "#{KEYWORD_PREFIX}#{@value.strip}"
+        "#{keyword_prefix}#{@value.strip}"
       end
     end
   end

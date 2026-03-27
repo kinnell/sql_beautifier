@@ -3,9 +3,7 @@
 module SqlBeautifier
   module Clauses
     class From < Base
-      KEYWORD_PREFIX = "from    "
-      CONTINUATION_INDENTATION = "        "
-      JOIN_CONDITION_INDENTATION = "            "
+      KEYWORD = "from"
 
       def self.call(value, table_registry:)
         new(value, table_registry: table_registry).call
@@ -22,7 +20,7 @@ module SqlBeautifier
         join_parts = split_join_parts
         primary_table_text = join_parts.shift.strip
         formatted_primary_table_name = format_table_with_alias(primary_table_text)
-        add_line!("#{KEYWORD_PREFIX}#{formatted_primary_table_name}")
+        add_line!("#{keyword_prefix}#{formatted_primary_table_name}")
 
         join_parts.each { |join_part| format_join_part(join_part) }
 
@@ -35,6 +33,10 @@ module SqlBeautifier
         @lines << line
       end
 
+      def join_condition_indentation
+        Util.whitespace(SqlBeautifier.config_for(:keyword_column_width) + 4)
+      end
+
       def format_join_part(join_part)
         join_keyword, remaining_join_content = extract_join_keyword(join_part)
         return unless join_keyword && remaining_join_content
@@ -45,7 +47,7 @@ module SqlBeautifier
           format_join_with_conditions(join_keyword, remaining_join_content, on_keyword_position)
         else
           formatted_table_name = format_table_with_alias(remaining_join_content)
-          add_line!("#{CONTINUATION_INDENTATION}#{join_keyword} #{formatted_table_name}")
+          add_line!("#{continuation_indent}#{join_keyword} #{formatted_table_name}")
         end
       end
 
@@ -56,10 +58,10 @@ module SqlBeautifier
 
         formatted_table_name = format_table_with_alias(table_text)
         first_condition = on_conditions.first[1]
-        add_line!("#{CONTINUATION_INDENTATION}#{join_keyword} #{formatted_table_name} on #{first_condition}")
+        add_line!("#{continuation_indent}#{join_keyword} #{formatted_table_name} on #{first_condition}")
 
         on_conditions.drop(1).each do |conjunction, additional_condition|
-          add_line!("#{JOIN_CONDITION_INDENTATION}#{conjunction} #{additional_condition}")
+          add_line!("#{join_condition_indentation}#{conjunction} #{additional_condition}")
         end
       end
 
@@ -137,7 +139,7 @@ module SqlBeautifier
 
       def format_table_with_alias(table_text)
         table_name = Util.first_word(table_text)
-        formatted_table_name = Util.upper_pascal_case(table_name)
+        formatted_table_name = Util.format_table_name(table_name)
         table_alias = @table_registry.alias_for(table_name)
         return formatted_table_name unless table_alias
 
