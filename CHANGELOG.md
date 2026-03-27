@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.1.4] - 2026-03-26
+
 - Update `bin/ci` and `bin/release` to use new formatting functions
 - Add `--quiet` flag to `bin/ci` to suppress output
 - Add `--dry-run` flag to `bin/release` to perform a dry run of the release process
