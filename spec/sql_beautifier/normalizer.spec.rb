@@ -100,6 +100,14 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
     end
 
+    context "when the value has whitespace inside a string literal" do
+      let(:value) { "SELECT * FROM users WHERE bio = 'Hello   World'" }
+
+      it "preserves whitespace inside the string literal" do
+        expect(output).to eq("select * from users where bio = 'Hello   World'")
+      end
+    end
+
     context "when the value has an unclosed double-quoted identifier" do
       let(:value) { 'SELECT "broken FROM users' }
 

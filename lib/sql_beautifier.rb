@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "active_support/core_ext/object/blank"
-require "active_support/core_ext/string/filters"
 
 require_relative "sql_beautifier/version"
 require_relative "sql_beautifier/constants"

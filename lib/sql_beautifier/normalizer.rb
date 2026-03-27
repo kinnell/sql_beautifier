@@ -15,7 +15,7 @@ module SqlBeautifier
     def call
       return unless @value.present?
 
-      @source = @value.squish
+      @source = @value.strip
       return unless @source.present?
 
       @output = +""
@@ -28,6 +28,9 @@ module SqlBeautifier
 
         when '"'
           consume_quoted_identifier!
+
+        when %r{\s}
+          collapse_whitespace!
 
         else
           @output << current_character.downcase
@@ -42,6 +45,12 @@ module SqlBeautifier
 
     def current_character
       @source[@position]
+    end
+
+    def collapse_whitespace!
+      @output << " "
+      @position += 1
+      @position += 1 while @position < @source.length && @source[@position] =~ %r{\s}
     end
 
     def consume_string_literal!
