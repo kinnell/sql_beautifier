@@ -460,6 +460,195 @@ RSpec.describe SqlBeautifier::Formatter do
     end
 
     ############################################################################
+    ## CTE Integration
+    ############################################################################
+
+    context "with a single CTE" do
+      let(:value) { "WITH active_users AS (SELECT id, name FROM users WHERE active = true) SELECT * FROM active_users" }
+
+      it "formats the CTE and main query" do
+        expect(output).to eq(<<~SQL)
+          with    active_users as (
+                      select  id,
+                              name
+
+                      from    Users u
+
+                      where   active = true
+                  )
+
+          select  *
+          from    Active_Users au
+        SQL
+      end
+    end
+
+    context "with multiple CTEs" do
+      let(:value) { "WITH active_users AS (SELECT id FROM users WHERE active = true), recent_orders AS (SELECT user_id, total FROM orders) SELECT au.id, ro.total FROM active_users au INNER JOIN recent_orders ro ON ro.user_id = au.id" }
+
+      it "formats each CTE and the main query" do
+        expect(output).to eq(<<~SQL)
+          with    active_users as (
+                      select  id
+                      from    Users u
+                      where   active = true
+                  ),
+                  recent_orders as (
+                      select  user_id,
+                              total
+
+                      from    Orders o
+                  )
+
+          select  au.id,
+                  ro.total
+
+          from    Active_Users au
+                  inner join Recent_Orders ro on ro.user_id = au.id
+        SQL
+      end
+    end
+
+    context "with a CTE containing joins and conditions" do
+      let(:value) { "WITH order_details AS (SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id WHERE orders.total > 100) SELECT * FROM order_details" }
+
+      it "formats the CTE body with join and alias handling" do
+        expect(output).to eq(<<~SQL)
+          with    order_details as (
+                      select  u.id,
+                              o.total
+
+                      from    Users u
+                              inner join Orders o on o.user_id = u.id
+
+                      where   o.total > 100
+                  )
+
+          select  *
+          from    Order_Details od
+        SQL
+      end
+    end
+
+    context "with a CTE containing a subquery" do
+      let(:value) { "WITH filtered AS (SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)) SELECT * FROM filtered" }
+
+      it "formats both the CTE body and the nested subquery" do
+        expect(output).to eq(<<~SQL)
+          with    filtered as (
+                      select  id
+                      from    Users u
+                      where   id in (
+                                  select  user_id
+                                  from    Orders o
+                              )
+                  )
+
+          select  *
+          from    Filtered f
+        SQL
+      end
+    end
+
+    context "with a CTE where strings contain SQL keywords" do
+      let(:value) { "WITH labeled AS (SELECT id, name FROM users WHERE name = 'with as select') SELECT * FROM labeled" }
+
+      it "preserves string literals and formats correctly" do
+        expect(output).to include("where   name = 'with as select'")
+        expect(output).to start_with("with    labeled as (")
+      end
+    end
+
+    context "with a recursive CTE" do
+      let(:value) { "WITH RECURSIVE numbers AS (SELECT 1 AS n) SELECT * FROM numbers" }
+
+      it "formats with the recursive keyword" do
+        expect(output).to start_with("with    recursive numbers as (")
+        expect(output).to include("select  *\nfrom    Numbers n")
+      end
+    end
+
+    context "with a recursive CTE with a SEARCH clause" do
+      let(:value) { "WITH RECURSIVE cte AS (SELECT id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col SELECT * FROM cte" }
+
+      it "preserves the SEARCH clause while formatting the CTE body" do
+        expect(output).to eq(<<~SQL)
+          with    recursive cte as (
+                      select  id
+                      from    Nodes n
+                  )
+
+          search depth first by id set order_col select * from cte
+        SQL
+      end
+    end
+
+    context "with a recursive CTE with SEARCH and CYCLE clauses" do
+      let(:value) { "WITH RECURSIVE cte AS (SELECT id, parent_id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col CYCLE id SET is_cycle USING cycle_path SELECT * FROM cte" }
+
+      it "preserves SEARCH and CYCLE clauses while formatting the CTE body" do
+        expect(output).to eq(<<~SQL)
+          with    recursive cte as (
+                      select  id,
+                              parent_id
+
+                      from    Nodes n
+                  )
+
+          search depth first by id set order_col cycle id set is_cycle using cycle_path select * from cte
+        SQL
+      end
+    end
+
+    context "with a CTE with a column list" do
+      let(:value) { "WITH cte(a, b) AS (SELECT 1, 2) SELECT * FROM cte" }
+
+      it "preserves the column list in the header" do
+        expect(output).to eq(<<~SQL)
+          with    cte (a, b) as (
+                      select  1,
+                              2
+                  )
+
+          select  *
+          from    Cte c
+        SQL
+      end
+    end
+
+    context "with a materialized CTE" do
+      let(:value) { "WITH cte AS MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
+
+      it "formats the CTE and preserves the :materialized keyword" do
+        expect(output).to eq(<<~SQL)
+          with    cte as materialized (
+                      select  id
+                      from    Users u
+                  )
+
+          select  *
+          from    Cte c
+        SQL
+      end
+    end
+
+    context "with a not materialized CTE" do
+      let(:value) { "WITH cte AS NOT MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
+
+      it "formats the CTE and preserves the :not materialized keywords" do
+        expect(output).to eq(<<~SQL)
+          with    cte as not materialized (
+                      select  id
+                      from    Users u
+                  )
+
+          select  *
+          from    Cte c
+        SQL
+      end
+    end
+
+    ############################################################################
     ## Configuration Integration
     ############################################################################
 
