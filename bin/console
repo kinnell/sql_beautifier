@@ -4,5 +4,9 @@
 require "bundler/setup"
 require "sql_beautifier"
 
+puts "Loading sql_beautifier v#{SqlBeautifier::VERSION}"
+
+ARGV.clear
+
 require "irb"
 IRB.start(__FILE__)
