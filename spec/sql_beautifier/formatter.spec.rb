@@ -374,15 +374,36 @@ RSpec.describe SqlBeautifier::Formatter do
     context "with parenthesized groups in WHERE" do
       let(:value) { "SELECT id FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator') AND verified = true" }
 
-      it "keeps inline groups and formats conditions" do
+      it "expands parenthesized groups and formats conditions" do
         expect(output).to eq(<<~SQL)
           select  id
 
           from    Users u
 
           where   active = true
-                  and (role = 'admin' or role = 'moderator')
+                  and (
+                      role = 'admin'
+                      or role = 'moderator'
+                  )
                   and verified = true
+        SQL
+      end
+    end
+
+    context "with a parenthesized OR group inside a WHERE clause" do
+      let(:value) { "SELECT * FROM Departments WHERE departments.id.enabled = true AND (departments.id IS NULL OR departments.id.exportable = true)" }
+
+      it "expands the parenthesized group with alias replacement" do
+        expect(output).to eq(<<~SQL)
+          select  *
+
+          from    Departments d
+
+          where   d.id.enabled = true
+                  and (
+                      d.id is null
+                      or d.id.exportable = true
+                  )
         SQL
       end
     end
@@ -807,6 +828,104 @@ RSpec.describe SqlBeautifier::Formatter do
         expect(output).to include("from    Users tbl_u")
         expect(output).to include("tbl_u.id")
         expect(output).to include("tbl_u.active")
+      end
+    end
+
+    ############################################################################
+    ## :inline_group_threshold Integration
+    ############################################################################
+
+    context "with :inline_group_threshold set to 0" do
+      let(:value) { "SELECT * FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator')" }
+
+      before { SqlBeautifier.configure { |config| config.inline_group_threshold = 0 } }
+
+      it "always expands parenthesized groups" do
+        expect(output).to eq(<<~SQL)
+          select  *
+
+          from    Users u
+
+          where   active = true
+                  and (
+                      role = 'admin'
+                      or role = 'moderator'
+                  )
+        SQL
+      end
+    end
+
+    context "with :inline_group_threshold below the inline group length" do
+      let(:value) { "SELECT * FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator')" }
+
+      before { SqlBeautifier.configure { |config| config.inline_group_threshold = 37 } }
+
+      it "expands the group to multiple lines" do
+        expect(output).to eq(<<~SQL)
+          select  *
+
+          from    Users u
+
+          where   active = true
+                  and (
+                      role = 'admin'
+                      or role = 'moderator'
+                  )
+        SQL
+      end
+    end
+
+    context "with :inline_group_threshold equal to the inline group length" do
+      let(:value) { "SELECT * FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator')" }
+
+      before { SqlBeautifier.configure { |config| config.inline_group_threshold = 38 } }
+
+      it "keeps the group inline" do
+        expect(output).to eq(<<~SQL)
+          select  *
+
+          from    Users u
+
+          where   active = true
+                  and (role = 'admin' or role = 'moderator')
+        SQL
+      end
+    end
+
+    context "with :inline_group_threshold above the inline group length" do
+      let(:value) { "SELECT * FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator')" }
+
+      before { SqlBeautifier.configure { |config| config.inline_group_threshold = 100 } }
+
+      it "keeps the group inline" do
+        expect(output).to eq(<<~SQL)
+          select  *
+
+          from    Users u
+
+          where   active = true
+                  and (role = 'admin' or role = 'moderator')
+        SQL
+      end
+    end
+
+    context "with :inline_group_threshold and a group that exceeds it" do
+      let(:value) { "SELECT * FROM users WHERE active = true AND (very_long_column_alpha = 'some_long_value' OR very_long_column_beta = 'another_long_value')" }
+
+      before { SqlBeautifier.configure { |config| config.inline_group_threshold = 60 } }
+
+      it "expands the long group while the threshold allows shorter ones" do
+        expect(output).to eq(<<~SQL)
+          select  *
+
+          from    Users u
+
+          where   active = true
+                  and (
+                      very_long_column_alpha = 'some_long_value'
+                      or very_long_column_beta = 'another_long_value'
+                  )
+        SQL
       end
     end
 

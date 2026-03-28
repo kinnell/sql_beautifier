@@ -168,7 +168,7 @@ where   active = true
         and created_at > '2024-01-01'
 ```
 
-Short parenthesized groups stay inline:
+Parenthesized condition groups are expanded to multiple lines with indentation:
 
 ```ruby
 SqlBeautifier.call("SELECT * FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator')")
@@ -182,7 +182,10 @@ select  *
 from    Users u
 
 where   active = true
-        and (role = 'admin' or role = 'moderator')
+        and (
+            role = 'admin'
+            or role = 'moderator'
+        )
 ```
 
 ### GROUP BY and HAVING
@@ -304,24 +307,15 @@ Customize formatting behavior with `SqlBeautifier.configure`:
 
 ```ruby
 SqlBeautifier.configure do |config|
-  config.keyword_case = :upper           # :lower (default), :upper
-  config.keyword_column_width = 10       # default: 8
-  config.indent_spaces = 4               # default: 4
-  config.clause_spacing_mode = :spacious # :compact (default), :spacious
-  config.table_name_format = :lowercase  # :pascal_case (default), :lowercase
-  config.inline_group_threshold = 80     # default: 100
-  config.alias_strategy = :none          # :initials (default), :none, or a callable
+  config.keyword_case = :upper
+  config.keyword_column_width = 10
+  config.indent_spaces = 4
+  config.clause_spacing_mode = :spacious
+  config.table_name_format = :lowercase
+  config.inline_group_threshold = 80
+  config.alias_strategy = :none
 end
 ```
-
-#### Clause Spacing Modes
-
-- `:compact` (default) keeps top-level clauses on single newlines only when the query is simple:
-  - exactly one SELECT column
-  - exactly one FROM table (no JOINs)
-  - zero or one top-level WHERE condition
-  - only `select`, `from`, optional `where`, optional `order by`, and optional `limit`
-- `:spacious` always separates top-level clauses with blank lines
 
 Reset to defaults:
 
@@ -329,11 +323,50 @@ Reset to defaults:
 SqlBeautifier.reset_configuration!
 ```
 
-#### Alias Strategies
+#### `keyword_case`
 
-- `:initials` (default) — automatic aliases using table initials (`users` → `u`, `active_storage_blobs` → `asb`)
-- `:none` — no automatic aliases (explicit aliases in the SQL are still preserved)
-- Callable — provide a proc/lambda for custom alias generation:
+Controls the case of SQL keywords in the output. Default: `:lower`.
+
+- `:lower` — lowercases all keywords (`select`, `from`, `where`, `inner join`, etc.)
+- `:upper` — uppercases all keywords (`SELECT`, `FROM`, `WHERE`, `INNER JOIN`, etc.)
+
+#### `keyword_column_width`
+
+Sets the column width for single-word keyword alignment. Keywords shorter than this width are right-padded with spaces so clause bodies start at this column position. Default: `8`.
+
+For example, with the default width of 8, `select` (6 chars) gets 2 spaces of padding, `where` (5 chars) gets 3 spaces, and `from` (4 chars) gets 4 spaces. Multi-word keywords like `order by` and `group by` use a single space instead of padding.
+
+#### `indent_spaces`
+
+Number of spaces used for indentation within subqueries and CTE bodies. Each nesting level adds this many spaces of indentation. Default: `4`.
+
+#### `clause_spacing_mode`
+
+Controls whether blank lines are inserted between top-level clauses. Default: `:compact`.
+
+- `:compact` — omits blank lines when the query is simple (single SELECT column, single FROM table with no JOINs, at most one WHERE condition, and only basic clauses like `select`, `from`, `where`, `order by`, `limit`). Complex queries automatically get blank lines regardless.
+- `:spacious` — always inserts blank lines between every top-level clause.
+
+#### `table_name_format`
+
+Controls how table names are formatted in the output. Default: `:pascal_case`.
+
+- `:pascal_case` — capitalizes each underscore-separated segment (`users` → `Users`, `active_storage_blobs` → `Active_Storage_Blobs`)
+- `:lowercase` — keeps table names lowercase as-is
+
+#### `inline_group_threshold`
+
+Maximum character length for a parenthesized condition group to remain on a single line. Groups whose inline representation exceeds this length are expanded to multiple lines with indented conditions. Default: `0` (always expand).
+
+Set to a positive integer to allow short groups to stay inline. For example, with a threshold of `80`, the group `(role = 'admin' or role = 'moderator')` would stay on one line since it's under 80 characters.
+
+#### `alias_strategy`
+
+Controls automatic table aliasing in FROM and JOIN clauses. Default: `:initials`.
+
+- `:initials` — generates aliases from the first letter of each underscore-separated segment (`users` → `u`, `active_storage_blobs` → `asb`). When two tables produce the same initials, a counter is appended for disambiguation (`u1`, `u2`). All `table.column` references throughout the query are replaced with `alias.column`.
+- `:none` — disables automatic aliasing. Explicit aliases written in the SQL are still preserved.
+- Callable — provide a proc/lambda that receives the table name and returns a custom alias string:
 
 ```ruby
 SqlBeautifier.configure do |config|

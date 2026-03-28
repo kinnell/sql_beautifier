@@ -2,6 +2,9 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Change `inline_group_threshold` default from `100` to `0` — parenthesized condition groups are now always expanded to multiple lines
+- Update README configuration section with detailed descriptions of each option
+
 ## [0.5.0] - 2026-03-28
 
 - Add support for Create Table As (CTA) formatting

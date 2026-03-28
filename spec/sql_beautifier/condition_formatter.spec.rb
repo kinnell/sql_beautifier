@@ -78,10 +78,13 @@ RSpec.describe SqlBeautifier::ConditionFormatter do
     context "with a short parenthesized group" do
       let(:value) { "active = true and (role = 'admin' or role = 'mod')" }
 
-      it "keeps the group inline" do
+      it "expands the group to multiple lines" do
         expect(output).to eq(<<~SQL.chomp)
           #{' ' * 8}active = true
-          #{' ' * 8}and (role = 'admin' or role = 'mod')
+          #{' ' * 8}and (
+          #{' ' * 12}role = 'admin'
+          #{' ' * 12}or role = 'mod'
+          #{' ' * 8})
         SQL
       end
     end
@@ -116,10 +119,16 @@ RSpec.describe SqlBeautifier::ConditionFormatter do
     context "with different inner and outer conjunctions preventing flattening" do
       let(:value) { "(a = 1 or b = 2) and (c = 3 or d = 4)" }
 
-      it "keeps each group inline without flattening" do
+      it "expands each group to multiple lines without flattening" do
         expect(output).to eq(<<~SQL.chomp)
-          #{' ' * 8}(a = 1 or b = 2)
-          #{' ' * 8}and (c = 3 or d = 4)
+          #{' ' * 8}(
+          #{' ' * 12}a = 1
+          #{' ' * 12}or b = 2
+          #{' ' * 8})
+          #{' ' * 8}and (
+          #{' ' * 12}c = 3
+          #{' ' * 12}or d = 4
+          #{' ' * 8})
         SQL
       end
     end
@@ -138,8 +147,13 @@ RSpec.describe SqlBeautifier::ConditionFormatter do
     context "with a single wrapped group as the only condition" do
       let(:value) { "(a = 1 and b = 2)" }
 
-      it "keeps the group inline" do
-        expect(output).to eq("#{' ' * 8}(a = 1 and b = 2)")
+      it "expands the group to multiple lines" do
+        expect(output).to eq(<<~SQL.chomp)
+          #{' ' * 8}(
+          #{' ' * 12}a = 1
+          #{' ' * 12}and b = 2
+          #{' ' * 8})
+        SQL
       end
     end
 
@@ -157,10 +171,16 @@ RSpec.describe SqlBeautifier::ConditionFormatter do
     context "with a nested parenthesized group inside another group" do
       let(:value) { "a = 1 and (b = 2 or (c = 3 and d = 4))" }
 
-      it "keeps the nested groups inline when short" do
+      it "expands each level of nesting to multiple lines" do
         expect(output).to eq(<<~SQL.chomp)
           #{' ' * 8}a = 1
-          #{' ' * 8}and (b = 2 or (c = 3 and d = 4))
+          #{' ' * 8}and (
+          #{' ' * 12}b = 2
+          #{' ' * 12}or (
+          #{' ' * 16}c = 3
+          #{' ' * 16}and d = 4
+          #{' ' * 12})
+          #{' ' * 8})
         SQL
       end
     end
@@ -180,11 +200,17 @@ RSpec.describe SqlBeautifier::ConditionFormatter do
     context "with multiple parenthesized groups" do
       let(:value) { "(a = 1 or b = 2) and c = 3 and (d = 4 or e = 5)" }
 
-      it "keeps each group inline alongside plain conditions" do
+      it "expands each group to multiple lines alongside plain conditions" do
         expect(output).to eq(<<~SQL.chomp)
-          #{' ' * 8}(a = 1 or b = 2)
+          #{' ' * 8}(
+          #{' ' * 12}a = 1
+          #{' ' * 12}or b = 2
+          #{' ' * 8})
           #{' ' * 8}and c = 3
-          #{' ' * 8}and (d = 4 or e = 5)
+          #{' ' * 8}and (
+          #{' ' * 12}d = 4
+          #{' ' * 12}or e = 5
+          #{' ' * 8})
         SQL
       end
     end

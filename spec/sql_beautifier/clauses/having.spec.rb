@@ -61,10 +61,13 @@ RSpec.describe SqlBeautifier::Clauses::Having do
     context "with a parenthesized group" do
       let(:value) { "count(*) > 5 and (sum(total) > 1000 or avg(price) < 10)" }
 
-      it "keeps the short group inline" do
+      it "expands the group to multiple lines" do
         expect(output).to eq(<<~SQL.chomp)
           having  count(*) > 5
-                  and (sum(total) > 1000 or avg(price) < 10)
+                  and (
+                      sum(total) > 1000
+                      or avg(price) < 10
+                  )
         SQL
       end
     end

@@ -24,8 +24,8 @@ RSpec.describe SqlBeautifier::Configuration do
       expect(described_class::DEFAULTS[:table_name_format]).to eq(:pascal_case)
     end
 
-    it "defines :inline_group_threshold as 100" do
-      expect(described_class::DEFAULTS[:inline_group_threshold]).to eq(100)
+    it "defines :inline_group_threshold as 0" do
+      expect(described_class::DEFAULTS[:inline_group_threshold]).to eq(0)
     end
 
     it "defines :alias_strategy as :initials" do

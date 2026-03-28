@@ -8,7 +8,7 @@ module SqlBeautifier
       indent_spaces: 4,
       clause_spacing_mode: :compact,
       table_name_format: :pascal_case,
-      inline_group_threshold: 100,
+      inline_group_threshold: 0,
       alias_strategy: :initials,
     }.freeze
 

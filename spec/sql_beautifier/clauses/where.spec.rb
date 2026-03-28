@@ -62,10 +62,13 @@ RSpec.describe SqlBeautifier::Clauses::Where do
     context "with a parenthesized group" do
       let(:value) { "active = true and (role = 'admin' or role = 'moderator')" }
 
-      it "keeps short groups inline" do
+      it "expands the group to multiple lines" do
         expect(output).to eq(<<~SQL.chomp)
           where   active = true
-                  and (role = 'admin' or role = 'moderator')
+                  and (
+                      role = 'admin'
+                      or role = 'moderator'
+                  )
         SQL
       end
     end
@@ -73,11 +76,17 @@ RSpec.describe SqlBeautifier::Clauses::Where do
     context "with multiple parenthesized groups" do
       let(:value) { "active = true and (role = 'admin' or role = 'mod') and (status = 'verified' or status = 'pending')" }
 
-      it "keeps each short group inline" do
+      it "expands each group to multiple lines" do
         expect(output).to eq(<<~SQL.chomp)
           where   active = true
-                  and (role = 'admin' or role = 'mod')
-                  and (status = 'verified' or status = 'pending')
+                  and (
+                      role = 'admin'
+                      or role = 'mod'
+                  )
+                  and (
+                      status = 'verified'
+                      or status = 'pending'
+                  )
         SQL
       end
     end
