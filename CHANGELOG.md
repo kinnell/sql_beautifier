@@ -2,7 +2,13 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.5.0] - 2026-03-28
+
+- Add support for Create Table As (CTA) formatting
+
 ## [0.4.0] - 2026-03-27
+
+- Add CTE (Common Table Expression) formatting with recursive indentation
 
 ## [0.3.0] - 2026-03-27
 
