@@ -20,6 +20,9 @@ module SqlBeautifier
       cte_result = CteFormatter.format(@normalized_value, depth: @depth)
       return cte_result if cte_result
 
+      create_table_as_result = CreateTableAsFormatter.format(@normalized_value, depth: @depth)
+      return create_table_as_result if create_table_as_result
+
       first_clause_position = Tokenizer.first_clause_position(@normalized_value)
       return "#{@normalized_value}\n" if first_clause_position.nil? || first_clause_position.positive?
 

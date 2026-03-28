@@ -4,7 +4,8 @@ module SqlBeautifier
   module CteFormatter
     module_function
 
-    def format(normalized_sql, depth: 0)
+    def format(normalized_sql, args = {})
+      depth = args.fetch(:depth, 0)
       return nil unless cte_query?(normalized_sql)
 
       recursive, definitions, main_query_sql = parse(normalized_sql)
