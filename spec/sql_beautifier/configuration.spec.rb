@@ -31,6 +31,14 @@ RSpec.describe SqlBeautifier::Configuration do
     it "defines :alias_strategy as :initials" do
       expect(described_class::DEFAULTS[:alias_strategy]).to eq(:initials)
     end
+
+    it "defines :trailing_semicolon as true" do
+      expect(described_class::DEFAULTS[:trailing_semicolon]).to eq(true)
+    end
+
+    it "defines :removable_comment_types as :none" do
+      expect(described_class::DEFAULTS[:removable_comment_types]).to eq(:none)
+    end
   end
 
   describe "#reset!" do
@@ -39,6 +47,7 @@ RSpec.describe SqlBeautifier::Configuration do
       configuration.keyword_case = :upper
       configuration.indent_spaces = 6
       configuration.clause_spacing_mode = :spacious
+      configuration.removable_comment_types = :all
 
       configuration.reset!
 
@@ -46,6 +55,7 @@ RSpec.describe SqlBeautifier::Configuration do
       expect(configuration.keyword_case).to eq(:lower)
       expect(configuration.indent_spaces).to eq(4)
       expect(configuration.clause_spacing_mode).to eq(:compact)
+      expect(configuration.removable_comment_types).to eq(:none)
     end
   end
 end

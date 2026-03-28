@@ -2,8 +2,14 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- **Breaking**: comments are now preserved by default. Set `removable_comment_types = :all` to restore previous behavior of stripping all comments
+- Add `removable_comment_types` configuration option (default: `:none`) — controls which SQL comment types are stripped during formatting. Accepts `:none`, `:all`, or an array of specific types (`:inline`, `:separate_line`, `:blocks`)
+- Add multi-statement support — input containing multiple statements (separated by `;` or concatenated) is split and formatted independently
+- Add `trailing_semicolon` configuration option (default: `true`) — automatically appends `;` to each formatted statement
+- Add per-call configuration overrides via `SqlBeautifier.call(value, trailing_semicolon: false)` — overrides take precedence over global config for the duration of the call
 - Change `inline_group_threshold` default from `100` to `0` — parenthesized condition groups are now always expanded to multiple lines
-- Update README configuration section with detailed descriptions of each option
+- Fix `StatementSplitter` incorrectly splitting `INSERT INTO ... SELECT` as two separate statements
+- Fix inline comments after a trailing semicolon (e.g. `SELECT 1; -- done`) being silently dropped during formatting
 
 ## [0.5.0] - 2026-03-28
 

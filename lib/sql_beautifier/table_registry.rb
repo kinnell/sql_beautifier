@@ -216,7 +216,7 @@ module SqlBeautifier
     end
 
     def extract_explicit_alias(table_specification)
-      words = table_specification.strip.split(Constants::WHITESPACE_REGEX)
+      words = table_specification.strip.split(Constants::WHITESPACE_REGEX).grep_v(CommentStripper::SENTINEL_PATTERN)
       return nil if words.length < 2
 
       if words[1] == "as"
