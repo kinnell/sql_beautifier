@@ -17,14 +17,17 @@ module SqlBeautifier
       @normalized_value = Normalizer.call(@value)
       return unless @normalized_value.present?
 
+      @leading_sentinels = extract_leading_sentinels!
+      return unless @normalized_value.present?
+
       cte_result = CteFormatter.format(@normalized_value, depth: @depth)
-      return cte_result if cte_result
+      return prepend_sentinels(cte_result) if cte_result
 
       create_table_as_result = CreateTableAsFormatter.format(@normalized_value, depth: @depth)
-      return create_table_as_result if create_table_as_result
+      return prepend_sentinels(create_table_as_result) if create_table_as_result
 
       first_clause_position = Tokenizer.first_clause_position(@normalized_value)
-      return "#{@normalized_value}\n" if first_clause_position.nil? || first_clause_position.positive?
+      return prepend_sentinels("#{@normalized_value}\n") if first_clause_position.nil? || first_clause_position.positive?
 
       @clauses = Tokenizer.split_into_clauses(@normalized_value)
       @table_registry = TableRegistry.new(@clauses[:from]) if @clauses[:from].present?
@@ -39,14 +42,35 @@ module SqlBeautifier
       append_clause!(:limit, Clauses::Limit)
 
       output = @parts.join(clause_separator)
-      return "#{@normalized_value}\n" if output.empty?
+      return prepend_sentinels("#{@normalized_value}\n") if output.empty?
 
       output = SubqueryFormatter.format(output, @depth)
       output = @table_registry.apply_aliases(output) if @table_registry
-      "#{output}\n"
+      prepend_sentinels("#{output}\n")
     end
 
     private
+
+    def extract_leading_sentinels!
+      leading_sentinel_text = +""
+      remaining_value = @normalized_value
+
+      while remaining_value.match?(%r{\A#{CommentStripper::SENTINEL_PATTERN}[[:space:]]*})
+        match = remaining_value.match(%r{\A(#{CommentStripper::SENTINEL_PATTERN}[[:space:]]*)})
+        leading_sentinel_text << match[1]
+        remaining_value = remaining_value[match[1].length..]
+      end
+
+      @normalized_value = remaining_value
+
+      leading_sentinel_text
+    end
+
+    def prepend_sentinels(output)
+      return output if @leading_sentinels.empty?
+
+      "#{@leading_sentinels}#{output}"
+    end
 
     def append_clause!(clause_key, formatter_class)
       value = @clauses[clause_key]

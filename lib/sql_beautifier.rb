@@ -7,8 +7,11 @@ require_relative "sql_beautifier/constants"
 require_relative "sql_beautifier/util"
 require_relative "sql_beautifier/configuration"
 
+require_relative "sql_beautifier/comment_stripper"
+require_relative "sql_beautifier/comment_restorer"
 require_relative "sql_beautifier/normalizer"
 require_relative "sql_beautifier/tokenizer"
+require_relative "sql_beautifier/statement_splitter"
 require_relative "sql_beautifier/table_registry"
 require_relative "sql_beautifier/condition_formatter"
 require_relative "sql_beautifier/subquery_formatter"
@@ -24,16 +27,19 @@ require_relative "sql_beautifier/clauses/order_by"
 require_relative "sql_beautifier/clauses/having"
 require_relative "sql_beautifier/clauses/limit"
 require_relative "sql_beautifier/formatter"
+require_relative "sql_beautifier/statement_assembler"
 
 module SqlBeautifier
   class Error < StandardError; end
 
   module_function
 
-  def call(value)
+  def call(value, config = {})
     return unless value.present?
 
-    Formatter.call(value)
+    with_configuration(config) do
+      StatementAssembler.call(value)
+    end
   end
 
   def configuration
@@ -45,10 +51,31 @@ module SqlBeautifier
   end
 
   def config_for(key)
+    overrides = Thread.current[:sql_beautifier_config]
+    return overrides[key] if overrides&.key?(key)
+
     configuration.public_send(key)
   end
 
   def reset_configuration!
     @configuration = Configuration.new
+  end
+
+  def with_configuration(config)
+    raise ArgumentError, "Expected a Hash for configuration overrides, got #{config.class}" unless config.is_a?(Hash)
+
+    return yield if config.empty?
+
+    previous = Thread.current[:sql_beautifier_config]
+    validate_configuration_keys!(config)
+    Thread.current[:sql_beautifier_config] = config
+    yield
+  ensure
+    Thread.current[:sql_beautifier_config] = previous if config.is_a?(Hash) && config.any?
+  end
+
+  def validate_configuration_keys!(config)
+    invalid_keys = config.keys - Configuration::DEFAULTS.keys
+    raise ArgumentError, "Unknown configuration keys: #{invalid_keys.join(', ')}" if invalid_keys.any?
   end
 end

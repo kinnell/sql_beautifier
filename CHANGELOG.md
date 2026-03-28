@@ -2,8 +2,19 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- **Breaking**: comments are now preserved by default. Set `removable_comment_types = :all` to restore previous behavior of stripping all comments
+- Add `removable_comment_types` configuration option (default: `:none`) — controls which SQL comment types are stripped during formatting. Accepts `:none`, `:all`, or an array of specific types (`:inline`, `:separate_line`, `:blocks`)
+- Add multi-statement support — input containing multiple statements (separated by `;` or concatenated) is split and formatted independently
+- Add `trailing_semicolon` configuration option (default: `true`) — automatically appends `;` to each formatted statement
+- Add per-call configuration overrides via `SqlBeautifier.call(value, trailing_semicolon: false)` — overrides take precedence over global config for the duration of the call
 - Change `inline_group_threshold` default from `100` to `0` — parenthesized condition groups are now always expanded to multiple lines
-- Update README configuration section with detailed descriptions of each option
+- Fix `StatementSplitter` incorrectly splitting `INSERT INTO ... SELECT` as two separate statements
+- Fix inline comments after a trailing semicolon (e.g. `SELECT 1; -- done`) being silently dropped during formatting
+- Fix infinite loop in `Normalizer#consume_sentinel!` when a malformed sentinel prefix has no closing `*/`
+- Fix `CommentStripper#resolve_removal_set` returning `nil` for unrecognized `removable_types` values — now raises `ArgumentError` with a descriptive message
+- Fix `CommentStripper#resolve_removal_set` silently accepting invalid entries in Array-typed `removable_types` (e.g. `[:inlne]`) — now validates each element against known comment types
+- Fix `CommentStripper` not inserting token-separating whitespace around sentinels when preserving block comments between adjacent tokens (e.g. `SELECT/*comment*/id`)
+- Strengthen end-to-end specs with exact full-output assertions and add coverage for JOINs, subqueries, CTEs, CREATE TABLE AS, DISTINCT, complex WHERE conditions, and configuration variations
 
 ## [0.5.0] - 2026-03-28
 
