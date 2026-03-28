@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.6.0] - 2026-03-28
+
 - **Breaking**: comments are now preserved by default. Set `removable_comment_types = :all` to restore previous behavior of stripping all comments
 - Add `removable_comment_types` configuration option (default: `:none`) — controls which SQL comment types are stripped during formatting. Accepts `:none`, `:all`, or an array of specific types (`:inline`, `:separate_line`, `:blocks`)
 - Add multi-statement support — input containing multiple statements (separated by `;` or concatenated) is split and formatted independently
