@@ -141,9 +141,15 @@ module SqlBeautifier
         table_name = Util.first_word(table_text)
         formatted_table_name = Util.format_table_name(table_name)
         table_alias = @table_registry.alias_for(table_name)
-        return formatted_table_name unless table_alias
+        trailing_sentinels = extract_trailing_sentinels(table_text)
 
-        "#{formatted_table_name} #{table_alias}"
+        formatted = table_alias ? "#{formatted_table_name} #{table_alias}" : formatted_table_name
+        trailing_sentinels.empty? ? formatted : "#{formatted} #{trailing_sentinels}"
+      end
+
+      def extract_trailing_sentinels(text)
+        sentinels = text.scan(CommentStripper::SENTINEL_PATTERN).map { |match| "#{CommentStripper::SENTINEL_PREFIX}#{match[0]}#{CommentStripper::SENTINEL_SUFFIX}" }
+        sentinels.join(" ")
       end
     end
   end
