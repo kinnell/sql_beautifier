@@ -285,12 +285,12 @@ where   id in (
 
 Nested subqueries increase indentation at each level.
 
-### Comments and Semicolons
+### Trailing Semicolons
 
-SQL comments (`--` line comments and `/* */` block comments) and trailing semicolons are automatically stripped during normalization. Comments inside string literals are preserved:
+By default, each formatted statement ends with a `;`:
 
 ```ruby
-SqlBeautifier.call("SELECT id /* primary key */ FROM users -- main table\nWHERE active = true;")
+SqlBeautifier.call("SELECT id FROM users WHERE active = true")
 ```
 
 Produces:
@@ -298,8 +298,57 @@ Produces:
 ```sql
 select  id
 from    Users u
-where   active = true
+where   active = true;
 ```
+
+Disable with `config.trailing_semicolon = false` to omit the trailing `;`.
+
+### Multiple Statements
+
+Input containing multiple SQL statements is split and formatted independently. Statements can be separated by `;` or simply concatenated:
+
+```ruby
+SqlBeautifier.call("SELECT id FROM constituents; SELECT id FROM departments")
+```
+
+Produces:
+
+```sql
+select  id
+from    Constituents c;
+
+select  id
+from    Departments d;
+```
+
+Concatenated statements without `;` are also detected:
+
+```ruby
+SqlBeautifier.call("SELECT id FROM constituents SELECT id FROM departments")
+```
+
+Produces the same output. Subqueries and CTE bodies are not mistakenly split.
+
+### Comments
+
+By default, SQL comments are preserved in formatted output. Line comments (`--`) and block comments (`/* */`) are classified by position and passed through formatting:
+
+```ruby
+SqlBeautifier.call("-- Base Query\nSELECT id /* primary key */ FROM users WHERE active = true")
+```
+
+Produces:
+
+```sql
+-- Base Query
+select  id /* primary key */
+
+from    Users u
+
+where   active = true;
+```
+
+Configure `removable_comment_types` to control which comment types are stripped. See the `removable_comment_types` configuration option for details. Comments inside string literals are always preserved regardless of configuration.
 
 ### Configuration
 
@@ -314,6 +363,8 @@ SqlBeautifier.configure do |config|
   config.table_name_format = :lowercase
   config.inline_group_threshold = 80
   config.alias_strategy = :none
+  config.trailing_semicolon = false
+  config.removable_comment_types = :all
 end
 ```
 
@@ -322,6 +373,16 @@ Reset to defaults:
 ```ruby
 SqlBeautifier.reset_configuration!
 ```
+
+#### Per-Call Overrides
+
+Pass configuration overrides directly to `SqlBeautifier.call` to override global settings for a single invocation:
+
+```ruby
+SqlBeautifier.call(query, trailing_semicolon: false, keyword_case: :upper)
+```
+
+Per-call overrides take precedence over the global `SqlBeautifier.configure` block. Any keys not included in the override hash fall back to the global configuration. The global configuration is never mutated. Unknown keys raise `ArgumentError`.
 
 #### `keyword_case`
 
@@ -360,6 +421,13 @@ Maximum character length for a parenthesized condition group to remain on a sing
 
 Set to a positive integer to allow short groups to stay inline. For example, with a threshold of `80`, the group `(role = 'admin' or role = 'moderator')` would stay on one line since it's under 80 characters.
 
+#### `trailing_semicolon`
+
+Controls whether a trailing `;` is appended to each formatted statement. Default: `true`.
+
+- `true` — appends `;` at the end of each statement
+- `false` — omits the trailing `;`
+
 #### `alias_strategy`
 
 Controls automatic table aliasing in FROM and JOIN clauses. Default: `:initials`.
@@ -371,6 +439,26 @@ Controls automatic table aliasing in FROM and JOIN clauses. Default: `:initials`
 ```ruby
 SqlBeautifier.configure do |config|
   config.alias_strategy = ->(table_name) { "t_#{table_name[0..2]}" }
+end
+```
+
+#### `removable_comment_types`
+
+Controls which SQL comment types are stripped during formatting. Default: `:none`.
+
+- `:none` — preserves all comments in the formatted output
+- `:all` — strips all comments (equivalent to `[:inline, :separate_line, :blocks]`)
+- Array of specific types — strips only the listed types, preserving the rest
+
+The three comment types:
+
+- `:separate_line` — `--` comments on their own line (only whitespace before `--`), including banner-style dividers
+- `:inline` — `--` comments at the end of a line that contains SQL
+- `:blocks` — `/* ... */` block comments (single or multi-line)
+
+```ruby
+SqlBeautifier.configure do |config|
+  config.removable_comment_types = [:inline, :blocks]
 end
 ```
 

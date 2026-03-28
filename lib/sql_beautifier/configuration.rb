@@ -10,7 +10,11 @@ module SqlBeautifier
       table_name_format: :pascal_case,
       inline_group_threshold: 0,
       alias_strategy: :initials,
+      trailing_semicolon: true,
+      removable_comment_types: :none,
     }.freeze
+
+    COMMENT_TYPES = %i[inline separate_line blocks].freeze
 
     attr_accessor :keyword_case
     attr_accessor :keyword_column_width
@@ -19,6 +23,8 @@ module SqlBeautifier
     attr_accessor :table_name_format
     attr_accessor :inline_group_threshold
     attr_accessor :alias_strategy
+    attr_accessor :trailing_semicolon
+    attr_accessor :removable_comment_types
 
     def initialize
       reset!

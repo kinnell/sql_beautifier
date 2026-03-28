@@ -16,6 +16,11 @@ module SqlBeautifier
 
         match_position = match.begin(0)
 
+        if inside_sentinel?(sql, match_position)
+          search_position = sentinel_end_position(sql, match_position) || (match_position + 1)
+          next
+        end
+
         previous_character = character_before(sql, match_position)
         next_character = character_after(sql, match_position, keyword.length)
 
@@ -101,6 +106,13 @@ module SqlBeautifier
           end
 
           position += 1
+          next
+        end
+
+        if sentinel_at?(text, position)
+          end_position = sentinel_end_position(text, position)
+          current_segment << text[position...end_position]
+          position = end_position
           next
         end
 
@@ -201,6 +213,11 @@ module SqlBeautifier
           next
         end
 
+        if sentinel_at?(text, position)
+          position = sentinel_end_position(text, position)
+          next
+        end
+
         case character
         when Constants::SINGLE_QUOTE
           inside_string_literal = true
@@ -252,6 +269,26 @@ module SqlBeautifier
       text[position] == Constants::DOUBLE_QUOTE && text[position + 1] == Constants::DOUBLE_QUOTE
     end
 
+    def sentinel_at?(text, position)
+      text[position, CommentStripper::SENTINEL_PREFIX.length] == CommentStripper::SENTINEL_PREFIX
+    end
+
+    def sentinel_end_position(text, position)
+      closing = text.index(CommentStripper::SENTINEL_SUFFIX, position + CommentStripper::SENTINEL_PREFIX.length)
+      return position + 1 unless closing
+
+      closing + CommentStripper::SENTINEL_SUFFIX.length
+    end
+
+    def inside_sentinel?(text, position)
+      search_start = [position - 20, 0].max
+      prefix_position = text.rindex(CommentStripper::SENTINEL_PREFIX, position)
+      return false unless prefix_position && prefix_position >= search_start
+
+      end_position = sentinel_end_position(text, prefix_position)
+      position < end_position
+    end
+
     def top_level?(sql, target_position)
       parenthesis_depth = 0
       inside_string_literal = false
@@ -282,6 +319,11 @@ module SqlBeautifier
           end
 
           position += 1
+          next
+        end
+
+        if sentinel_at?(sql, position)
+          position = sentinel_end_position(sql, position)
           next
         end
 
@@ -334,6 +376,11 @@ module SqlBeautifier
           else
             position += 1
           end
+          next
+        end
+
+        if sentinel_at?(text, position)
+          position = sentinel_end_position(text, position)
           next
         end
 

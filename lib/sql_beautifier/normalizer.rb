@@ -3,6 +3,7 @@
 module SqlBeautifier
   class Normalizer
     SAFE_UNQUOTED_IDENTIFIER = %r{\A[[:lower:]_][[:lower:][:digit:]_]*\z}
+    SENTINEL_START = "/*__sqlb_"
 
     def self.call(value)
       new(value).call
@@ -18,7 +19,6 @@ module SqlBeautifier
       @source = @value.strip
       return unless @source.present?
 
-      @source = strip_comments(@source)
       @source = strip_trailing_semicolons(@source)
       @source = @source.strip
       return unless @source.present?
@@ -33,6 +33,14 @@ module SqlBeautifier
 
         when Constants::DOUBLE_QUOTE
           consume_quoted_identifier!
+
+        when "/"
+          if sentinel_at_position?
+            consume_sentinel!
+          else
+            @output << current_character.downcase
+            @position += 1
+          end
 
         when Constants::WHITESPACE_CHARACTER_REGEX
           collapse_whitespace!
@@ -50,6 +58,19 @@ module SqlBeautifier
 
     def current_character
       @source[@position]
+    end
+
+    def sentinel_at_position?
+      @source[@position, SENTINEL_START.length] == SENTINEL_START
+    end
+
+    def consume_sentinel!
+      sentinel_end = @source.index("*/", @position + SENTINEL_START.length)
+      return unless sentinel_end
+
+      end_position = sentinel_end + 2
+      @output << @source[@position...end_position]
+      @position = end_position
     end
 
     def collapse_whitespace!
@@ -118,68 +139,6 @@ module SqlBeautifier
 
     def strip_trailing_semicolons(sql)
       sql.sub(%r{;[[:space:]]*\z}, "")
-    end
-
-    def strip_comments(sql)
-      output = +""
-      position = 0
-      in_single_quoted_string = false
-      in_double_quoted_identifier = false
-
-      while position < sql.length
-        character = sql[position]
-
-        if in_single_quoted_string
-          output << character
-
-          if character == Constants::SINGLE_QUOTE && sql[position + 1] == Constants::SINGLE_QUOTE
-            position += 1
-            output << sql[position]
-          elsif character == Constants::SINGLE_QUOTE
-            in_single_quoted_string = false
-          end
-
-          position += 1
-          next
-        end
-
-        if in_double_quoted_identifier
-          output << character
-
-          if character == Constants::DOUBLE_QUOTE && sql[position + 1] == Constants::DOUBLE_QUOTE
-            position += 1
-            output << sql[position]
-          elsif character == Constants::DOUBLE_QUOTE
-            in_double_quoted_identifier = false
-          end
-
-          position += 1
-          next
-        end
-
-        if character == Constants::SINGLE_QUOTE
-          in_single_quoted_string = true
-          output << character
-          position += 1
-        elsif character == Constants::DOUBLE_QUOTE
-          in_double_quoted_identifier = true
-          output << character
-          position += 1
-        elsif character == "-" && sql[position + 1] == "-"
-          position += 2
-          position += 1 while position < sql.length && sql[position] != "\n"
-        elsif character == "/" && sql[position + 1] == "*"
-          output << " " unless output.empty? || output[-1] =~ Constants::WHITESPACE_CHARACTER_REGEX
-          position += 2
-          position += 1 while position < sql.length && !(sql[position] == "*" && sql[position + 1] == "/")
-          position += 2 if position < sql.length
-        else
-          output << character
-          position += 1
-        end
-      end
-
-      output
     end
   end
 end

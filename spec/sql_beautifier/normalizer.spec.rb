@@ -192,11 +192,11 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
     end
 
-    context "with a trailing semicolon before a line comment" do
-      let(:value) { "SELECT 1; -- done" }
+    context "with a trailing semicolon before a sentinel" do
+      let(:value) { "SELECT 1; /*__sqlb_0__*/" }
 
-      it "removes the semicolon after comment stripping" do
-        expect(output).to eq("select 1")
+      it "preserves the semicolon and sentinel" do
+        expect(output).to eq("select 1; /*__sqlb_0__*/")
       end
     end
 
@@ -225,22 +225,46 @@ RSpec.describe SqlBeautifier::Normalizer do
     end
 
     ############################################################################
-    ## Comment Stripping
+    ## Sentinel Pass-Through
     ############################################################################
 
-    context "with a -- line comment" do
-      let(:value) { "SELECT id -- get the id\nFROM users" }
+    context "with a sentinel in the middle of SQL" do
+      let(:value) { "SELECT /*__sqlb_0__*/ id FROM users" }
 
-      it "removes the line comment" do
-        expect(output).to eq("select id from users")
+      it "passes the sentinel through verbatim" do
+        expect(output).to eq("select /*__sqlb_0__*/ id from users")
       end
     end
 
-    context "with a -- comment at end of query" do
-      let(:value) { "SELECT id FROM users -- done" }
+    context "with a sentinel at the start" do
+      let(:value) { "/*__sqlb_0__*/ SELECT id FROM users" }
 
-      it "removes the trailing comment" do
-        expect(output).to eq("select id from users")
+      it "passes the sentinel through verbatim" do
+        expect(output).to eq("/*__sqlb_0__*/ select id from users")
+      end
+    end
+
+    context "with a sentinel at the end" do
+      let(:value) { "SELECT id FROM users /*__sqlb_0__*/" }
+
+      it "passes the sentinel through verbatim" do
+        expect(output).to eq("select id from users /*__sqlb_0__*/")
+      end
+    end
+
+    context "with multiple sentinels" do
+      let(:value) { "/*__sqlb_0__*/ SELECT /*__sqlb_1__*/ id FROM users /*__sqlb_2__*/" }
+
+      it "passes all sentinels through verbatim" do
+        expect(output).to eq("/*__sqlb_0__*/ select /*__sqlb_1__*/ id from users /*__sqlb_2__*/")
+      end
+    end
+
+    context "with a sentinel with high index" do
+      let(:value) { "SELECT /*__sqlb_42__*/ id FROM users" }
+
+      it "passes the sentinel through verbatim" do
+        expect(output).to eq("select /*__sqlb_42__*/ id from users")
       end
     end
 
@@ -252,38 +276,6 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
     end
 
-    context "with -- inside a double-quoted identifier" do
-      let(:value) { 'SELECT "User--Name" FROM users' }
-
-      it "preserves -- inside the identifier" do
-        expect(output).to eq('select "user--name" from users')
-      end
-    end
-
-    context "with a /* */ block comment" do
-      let(:value) { "SELECT /* columns */ id FROM users" }
-
-      it "removes the block comment" do
-        expect(output).to eq("select id from users")
-      end
-    end
-
-    context "with a /* */ block comment between tokens" do
-      let(:value) { "SELECT/*columns*/id FROM users" }
-
-      it "preserves token separation after stripping the comment" do
-        expect(output).to eq("select id from users")
-      end
-    end
-
-    context "with a /* */ block comment spanning content" do
-      let(:value) { "SELECT id /* , name, email */ FROM users" }
-
-      it "removes the spanning block comment" do
-        expect(output).to eq("select id from users")
-      end
-    end
-
     context "with /* */ inside a string literal" do
       let(:value) { "SELECT * FROM users WHERE name = 'test/**/value'" }
 
@@ -292,35 +284,19 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
     end
 
+    context "with -- inside a double-quoted identifier" do
+      let(:value) { 'SELECT "User--Name" FROM users' }
+
+      it "preserves -- inside the identifier" do
+        expect(output).to eq('select "user--name" from users')
+      end
+    end
+
     context "with /* */ inside a double-quoted identifier" do
       let(:value) { 'SELECT "Cost/*Center*/Code" FROM users' }
 
       it "preserves /* */ inside the identifier" do
         expect(output).to eq('select "cost/*center*/code" from users')
-      end
-    end
-
-    context "with multiple comments" do
-      let(:value) { "SELECT /* a */ id -- get id\nFROM users" }
-
-      it "strips all comments" do
-        expect(output).to eq("select id from users")
-      end
-    end
-
-    context "with comment-only input" do
-      let(:value) { "-- just a comment" }
-
-      it "returns nil" do
-        expect(output).to be_nil
-      end
-    end
-
-    context "with mixed -- and /* */ comments" do
-      let(:value) { "/* header */ SELECT id -- inline\nFROM /* source */ users" }
-
-      it "strips all comments" do
-        expect(output).to eq("select id from users")
       end
     end
   end
