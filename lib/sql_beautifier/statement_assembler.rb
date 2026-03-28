@@ -2,8 +2,8 @@
 
 module SqlBeautifier
   class StatementAssembler
-    def self.call(value)
-      new(value).call
+    def self.call(...)
+      new(...).call
     end
 
     def initialize(value)
@@ -12,7 +12,7 @@ module SqlBeautifier
 
     def call
       removable_types = SqlBeautifier.config_for(:removable_comment_types)
-      comment_result = CommentStripper.call(@value, removable_types)
+      comment_result = CommentParser.call(@value, removable_types)
 
       statements = StatementSplitter.split(comment_result.stripped_sql)
       formatted_statements = statements.filter_map do |statement|
@@ -25,7 +25,7 @@ module SqlBeautifier
       terminator = trailing_semicolon ? ";\n" : "\n"
 
       output = formatted_statements.join(separator) + terminator
-      CommentRestorer.call(output, comment_result.comment_map)
+      CommentParser.restore(output, comment_result.comment_map)
     end
   end
 end

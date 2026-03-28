@@ -125,7 +125,13 @@ RSpec.describe SqlBeautifier::Normalizer do
     end
 
     context "when the value has newline characters" do
-      let(:value) { "SELECT id\nFROM users\nWHERE active = true" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id
+          FROM users
+          WHERE active = true
+        SQL
+      end
 
       it "collapses newlines to single spaces" do
         expect(output).to eq("select id from users where active = true")

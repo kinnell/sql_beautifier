@@ -15,102 +15,42 @@ module SqlBeautifier
     end
 
     def split_on_semicolons(sql)
+      scanner = Scanner.new(sql)
       segments = []
       current_segment = +""
-      inside_string_literal = false
-      inside_quoted_identifier = false
-      inside_dollar_quoted_string = false
-      dollar_quote_delimiter = nil
-      parenthesis_depth = 0
-      position = 0
 
-      while position < sql.length
-        character = sql[position]
-
-        if inside_string_literal
-          current_segment << character
-
-          if character == Constants::SINGLE_QUOTE && sql[position + 1] == Constants::SINGLE_QUOTE
-            position += 1
-            current_segment << sql[position]
-          elsif character == Constants::SINGLE_QUOTE
-            inside_string_literal = false
-          end
-
-          position += 1
+      until scanner.finished?
+        consumed = scanner.scan_quoted_or_sentinel!
+        if consumed
+          current_segment << consumed
           next
         end
 
-        if inside_dollar_quoted_string
-          if sql[position, dollar_quote_delimiter.length] == dollar_quote_delimiter
-            current_segment << dollar_quote_delimiter
-            position += dollar_quote_delimiter.length
-            inside_dollar_quoted_string = false
-            dollar_quote_delimiter = nil
-          else
-            current_segment << character
-            position += 1
-          end
-          next
-        end
-
-        if inside_quoted_identifier
-          current_segment << character
-
-          if character == Constants::DOUBLE_QUOTE && sql[position + 1] == Constants::DOUBLE_QUOTE
-            position += 1
-            current_segment << sql[position]
-          elsif character == Constants::DOUBLE_QUOTE
-            inside_quoted_identifier = false
-          end
-
-          position += 1
-          next
-        end
-
-        if Tokenizer.sentinel_at?(sql, position)
-          end_position = Tokenizer.sentinel_end_position(sql, position)
-          current_segment << sql[position...end_position]
-          position = end_position
-          next
-        end
-
-        delimiter = Tokenizer.dollar_quote_delimiter_at(sql, position)
-
-        if delimiter
-          inside_dollar_quoted_string = true
-          dollar_quote_delimiter = delimiter
-          current_segment << delimiter
-          position += delimiter.length
-          next
-        end
+        character = scanner.current_char
 
         case character
-        when Constants::SINGLE_QUOTE
-          inside_string_literal = true
-          current_segment << character
-        when Constants::DOUBLE_QUOTE
-          inside_quoted_identifier = true
-          current_segment << character
         when Constants::OPEN_PARENTHESIS
-          parenthesis_depth += 1
+          scanner.increment_depth!
           current_segment << character
+
         when Constants::CLOSE_PARENTHESIS
-          parenthesis_depth = [parenthesis_depth - 1, 0].max
+          scanner.decrement_depth!
           current_segment << character
+
         when ";"
-          if parenthesis_depth.zero?
+          if scanner.parenthesis_depth.zero?
             stripped_segment = current_segment.strip
             segments << stripped_segment unless stripped_segment.empty?
             current_segment = +""
           else
             current_segment << character
           end
+
         else
           current_segment << character
         end
 
-        position += 1
+        scanner.advance!
       end
 
       stripped_segment = current_segment.strip
@@ -141,102 +81,54 @@ module SqlBeautifier
     end
 
     def detect_statement_boundaries(sql)
+      scanner = Scanner.new(sql)
       boundaries = []
       clause_seen = false
       current_statement_keyword = nil
-      inside_string_literal = false
-      inside_quoted_identifier = false
-      inside_dollar_quoted_string = false
-      dollar_quote_delimiter = nil
-      parenthesis_depth = 0
-      position = 0
 
-      while position < sql.length
-        character = sql[position]
+      until scanner.finished?
+        next if scanner.skip_quoted_or_sentinel!
 
-        if inside_string_literal
-          if character == Constants::SINGLE_QUOTE && sql[position + 1] == Constants::SINGLE_QUOTE
-            position += 2
-          else
-            inside_string_literal = false if character == Constants::SINGLE_QUOTE
-            position += 1
-          end
-          next
-        end
-
-        if inside_dollar_quoted_string
-          if sql[position, dollar_quote_delimiter.length] == dollar_quote_delimiter
-            position += dollar_quote_delimiter.length
-            inside_dollar_quoted_string = false
-            dollar_quote_delimiter = nil
-          else
-            position += 1
-          end
-          next
-        end
-
-        if inside_quoted_identifier
-          if character == Constants::DOUBLE_QUOTE && sql[position + 1] == Constants::DOUBLE_QUOTE
-            position += 2
-          else
-            inside_quoted_identifier = false if character == Constants::DOUBLE_QUOTE
-            position += 1
-          end
-          next
-        end
-
-        if Tokenizer.sentinel_at?(sql, position)
-          position = Tokenizer.sentinel_end_position(sql, position)
-          next
-        end
-
-        delimiter = Tokenizer.dollar_quote_delimiter_at(sql, position)
-
-        if delimiter
-          inside_dollar_quoted_string = true
-          dollar_quote_delimiter = delimiter
-          position += delimiter.length
-          next
-        end
-
-        case character
+        case scanner.current_char
         when Constants::SINGLE_QUOTE
-          inside_string_literal = true
+          scanner.enter_single_quote!
         when Constants::DOUBLE_QUOTE
-          inside_quoted_identifier = true
+          scanner.enter_double_quote!
         when Constants::OPEN_PARENTHESIS
-          parenthesis_depth += 1
+          scanner.increment_depth!
+          scanner.advance!
         when Constants::CLOSE_PARENTHESIS
-          parenthesis_depth = [parenthesis_depth - 1, 0].max
+          scanner.decrement_depth!
+          scanner.advance!
         else
-          if parenthesis_depth.zero?
-            matched_statement_keyword = keyword_match_at(sql, position, STATEMENT_KEYWORDS)
+          if scanner.parenthesis_depth.zero?
+            matched_statement_keyword = keyword_match_at(scanner, STATEMENT_KEYWORDS)
 
             if matched_statement_keyword
               if clause_seen && !continuation_keyword?(current_statement_keyword, matched_statement_keyword)
-                boundaries << position
+                boundaries << scanner.position
                 clause_seen = false
                 current_statement_keyword = matched_statement_keyword
               elsif boundaries.empty?
-                boundaries << position
+                boundaries << scanner.position
                 current_statement_keyword = matched_statement_keyword
               end
 
-              position += matched_statement_keyword.length
+              scanner.advance!(matched_statement_keyword.length)
               next
             end
 
-            matched_boundary_keyword = keyword_match_at(sql, position, BOUNDARY_KEYWORDS)
+            matched_boundary_keyword = keyword_match_at(scanner, BOUNDARY_KEYWORDS)
 
             if matched_boundary_keyword
               clause_seen = true
-              position += matched_boundary_keyword.length
+              scanner.advance!(matched_boundary_keyword.length)
               next
             end
           end
-        end
 
-        position += 1
+          scanner.advance!
+        end
       end
 
       boundaries
@@ -255,15 +147,15 @@ module SqlBeautifier
     end
 
     def sentinel_only?(segment)
-      segment.gsub(CommentStripper::SENTINEL_PATTERN, "").strip.empty?
+      segment.gsub(CommentParser::SENTINEL_PATTERN, "").strip.empty?
     end
 
     def continuation_keyword?(current_keyword, next_keyword)
       CONTINUATION_PAIRS[current_keyword] == next_keyword
     end
 
-    def keyword_match_at(sql, position, keywords)
-      keywords.detect { |keyword| Tokenizer.keyword_at?(sql, position, keyword) }
+    def keyword_match_at(scanner, keywords)
+      keywords.detect { |keyword| scanner.keyword_at?(keyword) }
     end
   end
 end

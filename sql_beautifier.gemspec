@@ -31,4 +31,6 @@ Gem::Specification.new do |spec|
   spec.required_rubygems_version = Gem::Requirement.new(">= 2.0")
 
   spec.add_dependency "activesupport", ">= 6.0"
+  spec.add_dependency "dry-initializer", ">= 3.2"
+  spec.add_dependency "dry-types", ">= 1.9"
 end

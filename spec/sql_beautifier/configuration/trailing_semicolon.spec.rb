@@ -190,7 +190,9 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "appends a semicolon to the normalized output" do
-        expect(output).to eq("explain analyze something;\n")
+        expect(output).to eq(<<~SQL)
+          explain analyze something;
+        SQL
       end
     end
 
@@ -401,7 +403,9 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "does not append a semicolon" do
-        expect(output).to eq("explain analyze something\n")
+        expect(output).to eq(<<~SQL)
+          explain analyze something
+        SQL
       end
     end
   end

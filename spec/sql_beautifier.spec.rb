@@ -42,7 +42,11 @@ RSpec.describe SqlBeautifier do
     context "with :trailing_semicolon set to false" do
       let(:value) { "SELECT id FROM users" }
 
-      before { SqlBeautifier.configure { |config| config.trailing_semicolon = false } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.trailing_semicolon = false
+        end
+      end
 
       it "does not append a trailing semicolon" do
         expect(output).to eq(<<~SQL)
@@ -83,7 +87,11 @@ RSpec.describe SqlBeautifier do
     context "with trailing_semicolon disabled and multiple statements" do
       let(:value) { "SELECT id FROM constituents; SELECT id FROM departments" }
 
-      before { SqlBeautifier.configure { |config| config.trailing_semicolon = false } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.trailing_semicolon = false
+        end
+      end
 
       it "separates statements with a blank line and no semicolons" do
         expect(output).to eq(<<~SQL)
@@ -220,7 +228,14 @@ RSpec.describe SqlBeautifier do
     let(:output) { described_class.call(value) }
 
     context "with a banner comment before a statement" do
-      let(:value) { "--------------------------------------------------------------------------------\n-- Base Query (34ms)\n--------------------------------------------------------------------------------\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          --------------------------------------------------------------------------------
+          -- Base Query (34ms)
+          --------------------------------------------------------------------------------
+          SELECT id FROM users
+        SQL
+      end
 
       it "preserves the banner and formats the SQL" do
         expect(output).to eq(<<~SQL)
@@ -234,7 +249,13 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with a separate-line comment between two statements" do
-      let(:value) { "SELECT id FROM users;\n-- second query\nSELECT name FROM departments" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id FROM users;
+          -- second query
+          SELECT name FROM departments
+        SQL
+      end
 
       it "preserves the comment between formatted statements" do
         expect(output).to eq(<<~SQL)
@@ -249,7 +270,12 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with an inline comment in a SELECT clause" do
-      let(:value) { "SELECT id -- primary key\n, name FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id -- primary key
+          , name FROM users
+        SQL
+      end
 
       it "preserves the inline comment" do
         expect(output).to eq(<<~SQL)
@@ -262,7 +288,12 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with a separate-line and block comment in a compact query" do
-      let(:value) { "-- Base Query\nSELECT id /* primary key */ FROM users WHERE active = true" }
+      let(:value) do
+        <<~SQL.chomp
+          -- Base Query
+          SELECT id /* primary key */ FROM users WHERE active = true
+        SQL
+      end
 
       it "preserves both comments with compact spacing" do
         expect(output).to eq(<<~SQL)
@@ -288,9 +319,18 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with removable_comment_types set to :all" do
-      let(:value) { "-- banner\nSELECT id /* pk */ FROM users -- table" }
+      let(:value) do
+        <<~SQL.chomp
+          -- banner
+          SELECT id /* pk */ FROM users -- table
+        SQL
+      end
 
-      before { SqlBeautifier.configure { |config| config.removable_comment_types = :all } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.removable_comment_types = :all
+        end
+      end
 
       it "strips all comments" do
         expect(output).to eq(<<~SQL)
@@ -301,9 +341,18 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with removable_comment_types set to [:inline, :blocks]" do
-      let(:value) { "-- banner\nSELECT id /* pk */ FROM users -- table" }
+      let(:value) do
+        <<~SQL.chomp
+          -- banner
+          SELECT id /* pk */ FROM users -- table
+        SQL
+      end
 
-      before { SqlBeautifier.configure { |config| config.removable_comment_types = %i[inline blocks] } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.removable_comment_types = %i[inline blocks]
+        end
+      end
 
       it "strips inline and block comments but preserves separate-line" do
         expect(output).not_to include("/* pk */")
@@ -312,10 +361,19 @@ RSpec.describe SqlBeautifier do
       end
     end
 
-    context "with removable_comment_types set to [:separate_line]" do
-      let(:value) { "-- banner\nSELECT id /* pk */ FROM users -- inline" }
+    context "with removable_comment_types set to [:line]" do
+      let(:value) do
+        <<~SQL.chomp
+          -- banner
+          SELECT id /* pk */ FROM users -- inline
+        SQL
+      end
 
-      before { SqlBeautifier.configure { |config| config.removable_comment_types = [:separate_line] } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.removable_comment_types = [:line]
+        end
+      end
 
       it "strips separate-line comments but preserves inline and block" do
         expect(output).not_to include("-- banner")
@@ -325,7 +383,13 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with per-call config overriding removable_comment_types" do
-      let(:value) { "-- banner\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- banner
+          SELECT id FROM users
+        SQL
+      end
+
       let(:output) { described_class.call(value, removable_comment_types: :all) }
 
       it "strips comments per the override" do
@@ -1173,7 +1237,9 @@ RSpec.describe SqlBeautifier do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "returns normalized text" do
-        expect(output).to eq("explain analyze something\n")
+        expect(output).to eq(<<~SQL)
+          explain analyze something
+        SQL
       end
     end
 
@@ -1181,7 +1247,9 @@ RSpec.describe SqlBeautifier do
       let(:value) { "EXPLAIN SELECT id FROM users" }
 
       it "returns normalized text" do
-        expect(output).to eq("explain select id from users\n")
+        expect(output).to eq(<<~SQL)
+          explain select id from users
+        SQL
       end
     end
   end

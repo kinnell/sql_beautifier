@@ -445,12 +445,12 @@ end
 Controls which SQL comment types are stripped during formatting. Default: `:none`.
 
 - `:none` — preserves all comments in the formatted output
-- `:all` — strips all comments (equivalent to `[:inline, :separate_line, :blocks]`)
+- `:all` — strips all comments (equivalent to `[:inline, :line, :blocks]`)
 - Array of specific types — strips only the listed types, preserving the rest
 
 The three comment types:
 
-- `:separate_line` — `--` comments on their own line (only whitespace before `--`), including banner-style dividers
+- `:line` — `--` comments on their own line (only whitespace before `--`), including banner-style dividers
 - `:inline` — `--` comments at the end of a line that contains SQL
 - `:blocks` — `/* ... */` block comments (single or multi-line)
 

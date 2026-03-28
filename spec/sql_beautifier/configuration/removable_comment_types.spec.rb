@@ -17,7 +17,12 @@ RSpec.describe "removable_comment_types configuration" do
     let(:config_value) { :none }
 
     context "with a separate-line comment before a query" do
-      let(:value) { "-- header\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT id FROM users
+        SQL
+      end
 
       it "preserves the comment" do
         expect(output).to include("-- header")
@@ -25,15 +30,31 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a banner comment before a query" do
-      let(:value) { "--------------------------------------------------------------------------------\n-- Base Query (34ms)\n--------------------------------------------------------------------------------\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          --------------------------------------------------------------------------------
+          -- Base Query (34ms)
+          --------------------------------------------------------------------------------
+          SELECT id FROM users
+        SQL
+      end
 
       it "preserves the full banner" do
-        expect(output).to start_with("--------------------------------------------------------------------------------\n-- Base Query (34ms)\n--------------------------------------------------------------------------------\n")
+        expect(output).to start_with(<<~SQL)
+          --------------------------------------------------------------------------------
+          -- Base Query (34ms)
+          --------------------------------------------------------------------------------
+        SQL
       end
     end
 
     context "with an inline comment" do
-      let(:value) { "SELECT id -- primary key\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id -- primary key
+          FROM users
+        SQL
+      end
 
       it "preserves the inline comment" do
         expect(output).to include("-- primary key")
@@ -49,7 +70,13 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with all comment types in a single query" do
-      let(:value) { "-- header\nSELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "preserves the separate-line comment" do
         expect(output).to include("-- header")
@@ -65,7 +92,13 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a separate-line comment between two statements" do
-      let(:value) { "SELECT id FROM users;\n-- next query\nSELECT name FROM departments" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id FROM users;
+          -- next query
+          SELECT name FROM departments
+        SQL
+      end
 
       it "preserves the comment between statements" do
         expect(output).to include("-- next query")
@@ -94,7 +127,12 @@ RSpec.describe "removable_comment_types configuration" do
     let(:config_value) { :all }
 
     context "with a separate-line comment before a query" do
-      let(:value) { "-- header\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT id FROM users
+        SQL
+      end
 
       it "strips the comment" do
         expect(output).not_to include("-- header")
@@ -106,7 +144,14 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a banner comment before a query" do
-      let(:value) { "--------------------------------------------------------------------------------\n-- Base Query (34ms)\n--------------------------------------------------------------------------------\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          --------------------------------------------------------------------------------
+          -- Base Query (34ms)
+          --------------------------------------------------------------------------------
+          SELECT id FROM users
+        SQL
+      end
 
       it "strips the entire banner" do
         expect(output).not_to include("Base Query")
@@ -115,7 +160,12 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with an inline comment" do
-      let(:value) { "SELECT id -- primary key\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id -- primary key
+          FROM users
+        SQL
+      end
 
       it "strips the inline comment" do
         expect(output).not_to include("-- primary key")
@@ -131,7 +181,13 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with all comment types in a single query" do
-      let(:value) { "-- header\nSELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips all comments" do
         expect(output).not_to include("--")
@@ -154,7 +210,14 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with two statements and comments" do
-      let(:value) { "-- first\nSELECT id FROM users;\n-- second\nSELECT name FROM departments" }
+      let(:value) do
+        <<~SQL.chomp
+          -- first
+          SELECT id FROM users;
+          -- second
+          SELECT name FROM departments
+        SQL
+      end
 
       it "strips all comments" do
         expect(output).not_to include("--")
@@ -175,7 +238,13 @@ RSpec.describe "removable_comment_types configuration" do
     let(:config_value) { :inline }
 
     context "with an inline comment and a separate-line comment" do
-      let(:value) { "-- header\nSELECT id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips the inline comment" do
         expect(output).not_to include("-- pk")
@@ -187,7 +256,12 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with an inline comment and a block comment" do
-      let(:value) { "SELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips the inline comment" do
         expect(output).not_to include("-- pk")
@@ -200,14 +274,20 @@ RSpec.describe "removable_comment_types configuration" do
   end
 
   ############################################################################
-  ## removable_comment_types: :separate_line
+  ## removable_comment_types: :line
   ############################################################################
 
-  context "when removable_comment_types is :separate_line" do
-    let(:config_value) { :separate_line }
+  context "when removable_comment_types is :line" do
+    let(:config_value) { :line }
 
     context "with a separate-line comment and an inline comment" do
-      let(:value) { "-- header\nSELECT id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips the separate-line comment" do
         expect(output).not_to include("-- header")
@@ -219,7 +299,14 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a banner comment before a query" do
-      let(:value) { "--------------------------------------------------------------------------------\n-- Base Query (34ms)\n--------------------------------------------------------------------------------\nSELECT id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          --------------------------------------------------------------------------------
+          -- Base Query (34ms)
+          --------------------------------------------------------------------------------
+          SELECT id FROM users
+        SQL
+      end
 
       it "strips the entire banner" do
         expect(output).not_to include("Base Query")
@@ -232,7 +319,12 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a separate-line comment and a block comment" do
-      let(:value) { "-- header\nSELECT /* cols */ id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id FROM users
+        SQL
+      end
 
       it "strips the separate-line comment" do
         expect(output).not_to include("-- header")
@@ -252,7 +344,12 @@ RSpec.describe "removable_comment_types configuration" do
     let(:config_value) { :blocks }
 
     context "with a block comment and an inline comment" do
-      let(:value) { "SELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips the block comment" do
         expect(output).not_to include("/* cols */")
@@ -264,7 +361,12 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a block comment and a separate-line comment" do
-      let(:value) { "-- header\nSELECT /* cols */ id FROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id FROM users
+        SQL
+      end
 
       it "strips the block comment" do
         expect(output).not_to include("/* cols */")
@@ -276,7 +378,15 @@ RSpec.describe "removable_comment_types configuration" do
     end
 
     context "with a multi-line block comment" do
-      let(:value) { "SELECT id\n/* multi\nline\ncomment */\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          SELECT id
+          /* multi
+          line
+          comment */
+          FROM users
+        SQL
+      end
 
       it "strips the multi-line block comment" do
         expect(output).not_to include("multi")
@@ -293,7 +403,13 @@ RSpec.describe "removable_comment_types configuration" do
     let(:config_value) { %i[inline blocks] }
 
     context "with all comment types" do
-      let(:value) { "-- header\nSELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips inline comments" do
         expect(output).not_to include("-- pk")
@@ -309,11 +425,17 @@ RSpec.describe "removable_comment_types configuration" do
     end
   end
 
-  context "when removable_comment_types is [:inline, :separate_line]" do
-    let(:config_value) { %i[inline separate_line] }
+  context "when removable_comment_types is [:inline, :line]" do
+    let(:config_value) { %i[inline line] }
 
     context "with all comment types" do
-      let(:value) { "-- header\nSELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips inline comments" do
         expect(output).not_to include("-- pk")
@@ -329,11 +451,17 @@ RSpec.describe "removable_comment_types configuration" do
     end
   end
 
-  context "when removable_comment_types is [:blocks, :separate_line]" do
-    let(:config_value) { %i[blocks separate_line] }
+  context "when removable_comment_types is [:blocks, :line]" do
+    let(:config_value) { %i[blocks line] }
 
     context "with all comment types" do
-      let(:value) { "-- header\nSELECT /* cols */ id -- pk\nFROM users" }
+      let(:value) do
+        <<~SQL.chomp
+          -- header
+          SELECT /* cols */ id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips block comments" do
         expect(output).not_to include("/* cols */")
@@ -355,7 +483,15 @@ RSpec.describe "removable_comment_types configuration" do
 
   context "with a per-call override" do
     let(:config_value) { :none }
-    let(:value) { "-- header\nSELECT id -- pk\nFROM users" }
+
+    let(:value) do
+      <<~SQL.chomp
+        -- header
+        SELECT id -- pk
+        FROM users
+      SQL
+    end
+
     let(:output) { SqlBeautifier.call(value, removable_comment_types: :all) }
 
     it "uses the per-call value instead of the global config" do
@@ -365,7 +501,14 @@ RSpec.describe "removable_comment_types configuration" do
 
   context "when a global config is :all and per-call overrides to :none" do
     let(:config_value) { :all }
-    let(:value) { "-- header\nSELECT id FROM users" }
+
+    let(:value) do
+      <<~SQL.chomp
+        -- header
+        SELECT id FROM users
+      SQL
+    end
+
     let(:output) { SqlBeautifier.call(value, removable_comment_types: :none) }
 
     it "preserves all comments per the override" do

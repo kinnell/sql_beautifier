@@ -45,7 +45,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users inner join orders on orders.user_id = users.id" }
 
       it "formats the join on a continuation line" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   inner join Orders o on orders.user_id = users.id
         SQL
@@ -56,7 +56,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users left join profiles on profiles.user_id = users.id" }
 
       it "formats the left join" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   left join Profiles p on profiles.user_id = users.id
         SQL
@@ -67,7 +67,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users right join profiles on profiles.user_id = users.id" }
 
       it "formats the right join" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   right join Profiles p on profiles.user_id = users.id
         SQL
@@ -78,7 +78,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users left outer join addresses on addresses.user_id = users.id" }
 
       it "formats the left outer join" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   left outer join Addresses a on addresses.user_id = users.id
         SQL
@@ -89,7 +89,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users right outer join archived_users on archived_users.user_id = users.id" }
 
       it "formats the right outer join" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   right outer join Archived_Users au on archived_users.user_id = users.id
         SQL
@@ -100,7 +100,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users full outer join legacy_users on legacy_users.email = users.email" }
 
       it "formats the full outer join" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   full outer join Legacy_Users lu on legacy_users.email = users.email
         SQL
@@ -111,7 +111,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users full join profiles on profiles.user_id = users.id" }
 
       it "formats the full join" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   full join Profiles p on profiles.user_id = users.id
         SQL
@@ -122,7 +122,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users cross join roles" }
 
       it "formats the cross join without an ON clause" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   cross join Roles r
         SQL
@@ -137,7 +137,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users inner join orders on orders.user_id = users.id inner join products on products.id = orders.product_id" }
 
       it "formats each join on its own continuation line" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   inner join Orders o on orders.user_id = users.id
                   inner join Products p on products.id = orders.product_id
@@ -149,7 +149,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users inner join orders on orders.user_id = users.id left join payments on payments.order_id = orders.id" }
 
       it "formats each join type on its own continuation line" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   inner join Orders o on orders.user_id = users.id
                   left join Payments p on payments.order_id = orders.id
@@ -165,7 +165,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "persons inner join person_event_invitations on person_event_invitations.person_id = persons.id and person_event_invitations.event_id = 42" }
 
       it "formats additional conditions on indented lines" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Persons p
                   inner join Person_Event_Invitations pei on person_event_invitations.person_id = persons.id
                       and person_event_invitations.event_id = 42
@@ -177,7 +177,7 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users inner join orders on orders.user_id = users.id and orders.status = 'active' and orders.total > 0" }
 
       it "formats each additional condition on its own indented line" do
-        expect(output).to eq(<<~SQL.chomp)
+        expect(output).to match_formatted_text(<<~SQL)
           from    Users u
                   inner join Orders o on orders.user_id = users.id
                       and orders.status = 'active'

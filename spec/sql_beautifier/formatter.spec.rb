@@ -32,7 +32,10 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users" }
 
       it "returns the formatted query" do
-        expect(output).to eq("select  id\nfrom    Users u\n")
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+        SQL
       end
     end
 
@@ -61,7 +64,10 @@ RSpec.describe SqlBeautifier::Formatter do
       end
 
       it "keeps compact spacing for a simple query with limit" do
-        expect(output).to include("from    Users u\nlimit 10")
+        expect(output).to include(<<~SQL.chomp)
+          from    Users u
+          limit 10
+        SQL
       end
     end
 
@@ -97,8 +103,16 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "separates clauses with blank lines" do
-        expect(output).to include("name\n\nfrom")
-        expect(output).to include("Users u\n\nwhere")
+        expect(output).to include(<<~SQL.chomp)
+          name
+
+          from
+        SQL
+        expect(output).to include(<<~SQL.chomp)
+          Users u
+
+          where
+        SQL
       end
     end
 
@@ -167,7 +181,9 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "returns the normalized value with a trailing newline" do
-        expect(output).to eq("explain analyze something\n")
+        expect(output).to eq(<<~SQL)
+          explain analyze something
+        SQL
       end
     end
 
@@ -175,7 +191,9 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "EXPLAIN SELECT id FROM users" }
 
       it "returns the normalized value with a trailing newline" do
-        expect(output).to eq("explain select id from users\n")
+        expect(output).to eq(<<~SQL)
+          explain select id from users
+        SQL
       end
     end
 
@@ -585,7 +603,10 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats with the recursive keyword" do
         expect(output).to start_with("with    recursive numbers as (")
-        expect(output).to include("select  *\nfrom    Numbers n")
+        expect(output).to include(<<~SQL.chomp)
+          select  *
+          from    Numbers n
+        SQL
       end
     end
 
@@ -728,7 +749,10 @@ RSpec.describe SqlBeautifier::Formatter do
       end
 
       it "formats the body with DISTINCT" do
-        expect(output).to include("    select  distinct\n            c.id")
+        expect(output).to include_formatted_text(<<~SQL.chomp)
+          ····select  distinct
+          ····        c.id
+        SQL
       end
 
       it "formats joins with aliases" do
