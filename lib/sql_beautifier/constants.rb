@@ -26,6 +26,15 @@ module SqlBeautifier
     JOIN_KEYWORDS_BY_LENGTH = JOIN_KEYWORDS.sort_by { |keyword| -keyword.length }.freeze
     JOIN_KEYWORD_PATTERN = %r{\b(#{JOIN_KEYWORDS.map { |keyword| Regexp.escape(keyword) }.join('|')})\b}i
 
+    SET_OPERATORS = [
+      "intersect all",
+      "except all",
+      "union all",
+      "intersect",
+      "except",
+      "union",
+    ].freeze
+
     CONJUNCTIONS = %w[and or].freeze
     BETWEEN_KEYWORD = "between"
 

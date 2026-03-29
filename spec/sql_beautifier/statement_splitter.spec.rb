@@ -155,6 +155,65 @@ RSpec.describe SqlBeautifier::StatementSplitter do
       end
     end
 
+    context "with a UNION compound query" do
+      let(:value) { "SELECT id FROM users UNION SELECT id FROM admins" }
+
+      it "does not split the compound query" do
+        expect(output).to eq(["SELECT id FROM users UNION SELECT id FROM admins"])
+      end
+    end
+
+    context "with a UNION ALL compound query" do
+      let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins" }
+
+      it "does not split the compound query" do
+        expect(output).to eq(["SELECT id FROM users UNION ALL SELECT id FROM admins"])
+      end
+    end
+
+    context "with an INTERSECT compound query" do
+      let(:value) { "SELECT id FROM users INTERSECT SELECT id FROM admins" }
+
+      it "does not split the compound query" do
+        expect(output).to eq(["SELECT id FROM users INTERSECT SELECT id FROM admins"])
+      end
+    end
+
+    context "with an EXCEPT compound query" do
+      let(:value) { "SELECT id FROM users EXCEPT SELECT id FROM admins" }
+
+      it "does not split the compound query" do
+        expect(output).to eq(["SELECT id FROM users EXCEPT SELECT id FROM admins"])
+      end
+    end
+
+    context "with an INTERSECT ALL compound query" do
+      let(:value) { "SELECT id FROM users INTERSECT ALL SELECT id FROM admins" }
+
+      it "does not split the compound query" do
+        expect(output).to eq(["SELECT id FROM users INTERSECT ALL SELECT id FROM admins"])
+      end
+    end
+
+    context "with an EXCEPT ALL compound query" do
+      let(:value) { "SELECT id FROM users EXCEPT ALL SELECT id FROM admins" }
+
+      it "does not split the compound query" do
+        expect(output).to eq(["SELECT id FROM users EXCEPT ALL SELECT id FROM admins"])
+      end
+    end
+
+    context "with a compound query followed by a separate statement" do
+      let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins; SELECT id FROM departments" }
+
+      it "keeps the compound query intact and splits on the semicolon" do
+        expect(output).to eq([
+          "SELECT id FROM users UNION ALL SELECT id FROM admins",
+          "SELECT id FROM departments",
+        ])
+      end
+    end
+
     context "with a sentinel-only segment after a semicolon" do
       let(:value) { "SELECT id FROM users; /*__sqlb_0__*/" }
 

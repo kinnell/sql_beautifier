@@ -796,5 +796,250 @@ RSpec.describe SqlBeautifier::Formatter do
         SQL
       end
     end
+
+    ############################################################################
+    ## Compound Query (Set Operator) Integration
+    ############################################################################
+
+    context "with a UNION between two SELECTs" do
+      let(:value) { "SELECT id FROM users UNION SELECT id FROM admins" }
+
+      it "formats each segment and places UNION on its own line" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          union
+
+          select  id
+          from    Admins a
+        SQL
+      end
+    end
+
+    context "with a UNION ALL between two SELECTs" do
+      let(:value) { "SELECT id, name FROM users UNION ALL SELECT id, name FROM admins" }
+
+      it "formats each segment with UNION ALL on its own line" do
+        expect(output).to eq(<<~SQL)
+          select  id,
+                  name
+
+          from    Users u
+
+          union all
+
+          select  id,
+                  name
+
+          from    Admins a
+        SQL
+      end
+    end
+
+    context "with INTERSECT between two SELECTs" do
+      let(:value) { "SELECT id FROM users INTERSECT SELECT id FROM departments" }
+
+      it "formats with INTERSECT on its own line" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          intersect
+
+          select  id
+          from    Departments d
+        SQL
+      end
+    end
+
+    context "with EXCEPT between two SELECTs" do
+      let(:value) { "SELECT id FROM users EXCEPT SELECT id FROM departments" }
+
+      it "formats with EXCEPT on its own line" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          except
+
+          select  id
+          from    Departments d
+        SQL
+      end
+    end
+
+    context "with INTERSECT ALL between two SELECTs" do
+      let(:value) { "SELECT id FROM users INTERSECT ALL SELECT id FROM departments" }
+
+      it "formats with INTERSECT ALL on its own line" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          intersect all
+
+          select  id
+          from    Departments d
+        SQL
+      end
+    end
+
+    context "with EXCEPT ALL between two SELECTs" do
+      let(:value) { "SELECT id FROM users EXCEPT ALL SELECT id FROM departments" }
+
+      it "formats with EXCEPT ALL on its own line" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          except all
+
+          select  id
+          from    Departments d
+        SQL
+      end
+    end
+
+    context "with three segments and mixed operators" do
+      let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins UNION SELECT id FROM managers" }
+
+      it "formats all three segments with their operators" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          union all
+
+          select  id
+          from    Admins a
+
+          union
+
+          select  id
+          from    Managers m
+        SQL
+      end
+    end
+
+    context "with a compound query and trailing ORDER BY and LIMIT" do
+      let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins ORDER BY id LIMIT 10" }
+
+      it "formats trailing clauses after the last segment" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+
+          union all
+
+          select  id
+          from    Admins a
+
+          order by id
+          limit 10
+        SQL
+      end
+    end
+
+    context "with a compound query inside a CTE body" do
+      let(:value) { "WITH combined AS (SELECT id FROM users UNION ALL SELECT id FROM admins) SELECT * FROM combined" }
+
+      it "formats the CTE body as a compound query" do
+        expect(output).to eq(<<~SQL)
+          with    combined as (
+                      select  id
+                      from    Users u
+
+                      union all
+
+                      select  id
+                      from    Admins a
+                  )
+
+          select  *
+          from    Combined c
+        SQL
+      end
+    end
+
+    context "with a set operator keyword inside a string literal" do
+      let(:value) { "SELECT id FROM users WHERE name = 'union all'" }
+
+      it "does not split on the string literal" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+          where   name = 'union all'
+        SQL
+      end
+    end
+
+    context "with a set operator keyword inside a parenthesized subquery" do
+      let(:value) { "SELECT id FROM users WHERE id IN (SELECT id FROM a UNION ALL SELECT id FROM b)" }
+
+      it "formats the subquery with its own compound query" do
+        expect(output).to eq(<<~SQL)
+          select  id
+          from    Users u
+          where   id in (
+                      select  id
+                      from    A a
+
+                      union all
+
+                      select  id
+                      from    B b
+                  )
+        SQL
+      end
+    end
+
+    context "with compound query segments that have JOINs and WHERE conditions" do
+      let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id WHERE users.active = true UNION ALL SELECT admins.id, requests.total FROM admins INNER JOIN requests ON requests.admin_id = admins.id WHERE admins.role = 'super'" }
+
+      it "formats each segment independently with its own aliases" do
+        expect(output).to eq(<<~SQL)
+          select  u.id,
+                  o.total
+
+          from    Users u
+                  inner join Orders o on o.user_id = u.id
+
+          where   u.active = true
+
+          union all
+
+          select  a.id,
+                  r.total
+
+          from    Admins a
+                  inner join Requests r on r.admin_id = a.id
+
+          where   a.role = 'super'
+        SQL
+      end
+    end
+
+    context "with a CTE whose main query is a compound query" do
+      let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT id FROM active UNION ALL SELECT id FROM admins" }
+
+      it "formats the CTE and then the compound main query" do
+        expect(output).to eq(<<~SQL)
+          with    active as (
+                      select  id
+                      from    Users u
+                      where   active = true
+                  )
+
+          select  id
+          from    Active a
+
+          union all
+
+          select  id
+          from    Admins a
+        SQL
+      end
+    end
   end
 end

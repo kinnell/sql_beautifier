@@ -2,6 +2,12 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add compound query support for set operators (`UNION`, `UNION ALL`, `INTERSECT`, `INTERSECT ALL`, `EXCEPT`, `EXCEPT ALL`) — top-level set operator boundaries are detected via `Scanner`, each segment is independently formatted through the `Formatter` pipeline, and operators appear on their own line with blank-line separation
+- Introduce `CompoundQuery` entity class with `parse`/`render` following the `Base` + `dry-initializer` pattern established by `CteQuery` and `CreateTableAs`
+- Add trailing clause handling for compound queries — `ORDER BY` and `LIMIT` after the final segment are extracted and rendered separately below the last formatted segment
+- Fix `StatementSplitter` incorrectly splitting compound queries at the second `SELECT` — set operator keywords at depth 0 now suppress statement boundary detection for the following `SELECT`
+- Add `SET_OPERATORS` constant to `Constants` (longest-first order for greedy matching)
+
 ## [0.7.0] - 2026-03-29
 
 - Introduce `Query` entity encapsulating parsed clauses, depth, table registry, compact detection, and subquery formatting — `Formatter` delegates clause assembly and rendering to `Query`, and `SubqueryFormatter` is eliminated

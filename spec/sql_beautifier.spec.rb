@@ -1080,7 +1080,9 @@ RSpec.describe SqlBeautifier do
 
           from    Users u
 
-          where   active = true union all
+          where   active = true
+
+          union all
 
           select  id,
                   name
@@ -1098,7 +1100,9 @@ RSpec.describe SqlBeautifier do
       it "formats both sides of the UNION" do
         expect(output).to eq(<<~SQL)
           select  id
-          from    Users union
+          from    Users u
+
+          union
 
           select  id
           from    Departments d
@@ -1112,7 +1116,9 @@ RSpec.describe SqlBeautifier do
       it "formats both sides of the INTERSECT" do
         expect(output).to eq(<<~SQL)
           select  id
-          from    Users intersect
+          from    Users u
+
+          intersect
 
           select  id
           from    Departments d
@@ -1126,7 +1132,9 @@ RSpec.describe SqlBeautifier do
       it "formats both sides of the EXCEPT" do
         expect(output).to eq(<<~SQL)
           select  id
-          from    Users except
+          from    Users u
+
+          except
 
           select  id
           from    Departments d
