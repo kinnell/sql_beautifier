@@ -6,7 +6,7 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".upper_pascal_case" do
-    let(:output) { described_class.upper_pascal_case(value) }
+    let(:output) { SqlBeautifier::Util.upper_pascal_case(value) }
 
     context "with an empty string" do
       let(:value) { "" }
@@ -62,7 +62,7 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".first_word" do
-    let(:output) { described_class.first_word(value) }
+    let(:output) { SqlBeautifier::Util.first_word(value) }
 
     context "with an empty string" do
       let(:value) { "" }
@@ -118,7 +118,7 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".strip_outer_parentheses" do
-    let(:output) { described_class.strip_outer_parentheses(value) }
+    let(:output) { SqlBeautifier::Util.strip_outer_parentheses(value) }
 
     context "with an empty string" do
       let(:value) { "" }
@@ -182,7 +182,7 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".double_quote_string" do
-    let(:output) { described_class.double_quote_string(value) }
+    let(:output) { SqlBeautifier::Util.double_quote_string(value) }
 
     context "with nil" do
       let(:value) { nil }
@@ -222,7 +222,7 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".escape_double_quote" do
-    let(:output) { described_class.escape_double_quote(value) }
+    let(:output) { SqlBeautifier::Util.escape_double_quote(value) }
 
     context "with nil" do
       let(:value) { nil }
@@ -270,49 +270,95 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".keyword_padding" do
+    let(:output) { SqlBeautifier::Util.keyword_padding(keyword) }
+
     context "with default configuration" do
-      it "pads 'select' to 8 characters" do
-        expect(described_class.keyword_padding("select")).to eq("select  ")
+      context "with keyword 'select'" do
+        let(:keyword) { "select" }
+
+        it "pads 'select' to 8 characters" do
+          expect(output).to eq("select  ")
+        end
       end
 
-      it "pads 'from' to 8 characters" do
-        expect(described_class.keyword_padding("from")).to eq("from    ")
+      context "with keyword 'from'" do
+        let(:keyword) { "from" }
+
+        it "pads 'from' to 8 characters" do
+          expect(output).to eq("from    ")
+        end
       end
 
-      it "pads 'where' to 8 characters" do
-        expect(described_class.keyword_padding("where")).to eq("where   ")
+      context "with keyword 'where'" do
+        let(:keyword) { "where" }
+
+        it "pads 'where' to 8 characters" do
+          expect(output).to eq("where   ")
+        end
       end
 
-      it "pads 'having' to 8 characters" do
-        expect(described_class.keyword_padding("having")).to eq("having  ")
+      context "with keyword 'having'" do
+        let(:keyword) { "having" }
+
+        it "pads 'having' to 8 characters" do
+          expect(output).to eq("having  ")
+        end
       end
 
-      it "gives 'order by' a single trailing space" do
-        expect(described_class.keyword_padding("order by")).to eq("order by ")
+      context "with keyword 'order by'" do
+        let(:keyword) { "order by" }
+
+        it "pads 'order by' to 8 characters" do
+          expect(output).to eq("order by ")
+        end
       end
 
-      it "gives 'group by' a single trailing space" do
-        expect(described_class.keyword_padding("group by")).to eq("group by ")
+      context "with keyword 'group by'" do
+        let(:keyword) { "group by" }
+
+        it "pads 'group by' to 8 characters" do
+          expect(output).to eq("group by ")
+        end
       end
     end
 
     context "with custom :keyword_column_width" do
-      before { SqlBeautifier.configure { |config| config.keyword_column_width = 10 } }
-
-      it "pads 'select' to 10 characters" do
-        expect(described_class.keyword_padding("select")).to eq("select    ")
+      before do
+        SqlBeautifier.configure do |config|
+          config.keyword_column_width = 10
+        end
       end
 
-      it "pads 'from' to 10 characters" do
-        expect(described_class.keyword_padding("from")).to eq("from      ")
+      context "with keyword 'select'" do
+        let(:keyword) { "select" }
+
+        it "pads 'select' to 10 characters" do
+          expect(output).to eq("select    ")
+        end
+      end
+
+      context "with keyword 'from'" do
+        let(:keyword) { "from" }
+
+        it "pads 'from' to 10 characters" do
+          expect(output).to eq("from      ")
+        end
       end
     end
 
     context "with :keyword_case set to :upper" do
-      before { SqlBeautifier.configure { |config| config.keyword_case = :upper } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.keyword_case = :upper
+        end
+      end
 
-      it "uppercases the keyword" do
-        expect(described_class.keyword_padding("select")).to eq("SELECT  ")
+      context "with keyword 'select'" do
+        let(:keyword) { "select" }
+
+        it "uppercases the keyword" do
+          expect(output).to eq("SELECT  ")
+        end
       end
     end
   end
@@ -322,15 +368,21 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".continuation_padding" do
+    let(:output) { SqlBeautifier::Util.continuation_padding }
+
     it "returns spaces equal to :keyword_column_width" do
-      expect(described_class.continuation_padding).to eq("        ")
+      expect(output).to eq("        ")
     end
 
     context "with custom :keyword_column_width" do
-      before { SqlBeautifier.configure { |config| config.keyword_column_width = 10 } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.keyword_column_width = 10
+        end
+      end
 
       it "returns spaces equal to the custom width" do
-        expect(described_class.continuation_padding).to eq("          ")
+        expect(output).to eq("          ")
       end
     end
   end
@@ -340,17 +392,27 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".format_keyword" do
+    let(:output) { SqlBeautifier::Util.format_keyword(value) }
+
     context "with :lower keyword_case" do
+      let(:value) { "SELECT" }
+
       it "lowercases the keyword" do
-        expect(described_class.format_keyword("SELECT")).to eq("select")
+        expect(output).to eq("select")
       end
     end
 
     context "with :upper keyword_case" do
-      before { SqlBeautifier.configure { |config| config.keyword_case = :upper } }
+      let(:value) { "select" }
+
+      before do
+        SqlBeautifier.configure do |config|
+          config.keyword_case = :upper
+        end
+      end
 
       it "uppercases the keyword" do
-        expect(described_class.format_keyword("select")).to eq("SELECT")
+        expect(output).to eq("SELECT")
       end
     end
   end
@@ -360,25 +422,47 @@ RSpec.describe SqlBeautifier::Util do
   ############################################################################
 
   describe ".format_table_name" do
+    let(:output) { SqlBeautifier::Util.format_table_name(value) }
+
     context "with :pascal_case table_name_format" do
-      it "PascalCases underscore-separated names" do
-        expect(described_class.format_table_name("user_sessions")).to eq("User_Sessions")
+      context "with an underscore-separated name" do
+        let(:value) { "user_sessions" }
+
+        it "PascalCases the name" do
+          expect(output).to eq("User_Sessions")
+        end
       end
 
-      it "capitalizes single-word names" do
-        expect(described_class.format_table_name("users")).to eq("Users")
+      context "with a single-word name" do
+        let(:value) { "users" }
+
+        it "capitalizes the name" do
+          expect(output).to eq("Users")
+        end
       end
     end
 
     context "with :lowercase table_name_format" do
-      before { SqlBeautifier.configure { |config| config.table_name_format = :lowercase } }
-
-      it "lowercases the table name" do
-        expect(described_class.format_table_name("Users")).to eq("users")
+      before do
+        SqlBeautifier.configure do |config|
+          config.table_name_format = :lowercase
+        end
       end
 
-      it "lowercases underscore-separated names" do
-        expect(described_class.format_table_name("User_Sessions")).to eq("user_sessions")
+      context "with a PascalCase name" do
+        let(:value) { "Users" }
+
+        it "lowercases the name" do
+          expect(output).to eq("users")
+        end
+      end
+
+      context "with an underscore-separated PascalCase name" do
+        let(:value) { "User_Sessions" }
+
+        it "lowercases the name" do
+          expect(output).to eq("user_sessions")
+        end
       end
     end
   end

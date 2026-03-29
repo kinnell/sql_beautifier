@@ -3,8 +3,8 @@
 module SqlBeautifier
   module Clauses
     class Base
-      def self.call(value)
-        new(value).call
+      def self.call(...)
+        new(...).call
       end
 
       def initialize(value)

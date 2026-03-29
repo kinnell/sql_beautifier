@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe SqlBeautifier::CommentStripper do
+RSpec.describe SqlBeautifier::CommentParser do
   describe ".call" do
-    let(:result) { described_class.call(sql, removable_types) }
-    let(:stripped_sql) { result.stripped_sql }
-    let(:comment_map) { result.comment_map }
+    let(:output) { described_class.call(sql, removable_types) }
 
     ############################################################################
     ## Removing all comment types
@@ -14,26 +12,36 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:removable_types) { :all }
 
       context "with a -- separate-line comment" do
-        let(:sql) { "-- banner\nSELECT id FROM users" }
+        let(:sql) do
+          <<~SQL.chomp
+            -- banner
+            SELECT id FROM users
+          SQL
+        end
 
         it "strips the comment" do
-          expect(stripped_sql).to eq("\nSELECT id FROM users")
+          expect(output.stripped_sql).to eq("\nSELECT id FROM users")
         end
 
         it "returns an empty comment map" do
-          expect(comment_map).to be_empty
+          expect(output.comment_map).to be_empty
         end
       end
 
       context "with a -- inline comment" do
-        let(:sql) { "SELECT id -- primary key\nFROM users" }
+        let(:sql) do
+          <<~SQL.chomp
+            SELECT id -- primary key
+            FROM users
+          SQL
+        end
 
         it "strips the comment" do
-          expect(stripped_sql).to eq("SELECT id \nFROM users")
+          expect(output.stripped_sql).to eq("SELECT id \nFROM users")
         end
 
         it "returns an empty comment map" do
-          expect(comment_map).to be_empty
+          expect(output.comment_map).to be_empty
         end
       end
 
@@ -41,11 +49,11 @@ RSpec.describe SqlBeautifier::CommentStripper do
         let(:sql) { "SELECT /* columns */ id FROM users" }
 
         it "strips the comment and inserts a space for token separation" do
-          expect(stripped_sql).to eq("SELECT  id FROM users")
+          expect(output.stripped_sql).to eq("SELECT  id FROM users")
         end
 
         it "returns an empty comment map" do
-          expect(comment_map).to be_empty
+          expect(output.comment_map).to be_empty
         end
       end
 
@@ -53,7 +61,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
         let(:sql) { "SELECT/*columns*/id FROM users" }
 
         it "inserts a space for token separation" do
-          expect(stripped_sql).to eq("SELECT id FROM users")
+          expect(output.stripped_sql).to eq("SELECT id FROM users")
         end
       end
     end
@@ -66,34 +74,44 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:removable_types) { :none }
 
       context "with a -- separate-line comment" do
-        let(:sql) { "-- banner\nSELECT id FROM users" }
-
-        it "replaces the comment with a sentinel" do
-          expect(stripped_sql).to match(%r{\A/\*__sqlb_\d+__\*/\nSELECT id FROM users\z})
+        let(:sql) do
+          <<~SQL.chomp
+            -- banner
+            SELECT id FROM users
+          SQL
         end
 
-        it "records the comment as :separate_line" do
-          expect(comment_map.values.first[:type]).to eq(:separate_line)
+        it "replaces the comment with a sentinel" do
+          expect(output.stripped_sql).to match(%r{\A/\*__sqlb_\d+__\*/\nSELECT id FROM users\z})
+        end
+
+        it "records the comment as :line" do
+          expect(output.comment_map.values.first[:type]).to eq(:line)
         end
 
         it "records the original comment text" do
-          expect(comment_map.values.first[:text]).to eq("-- banner")
+          expect(output.comment_map.values.first[:text]).to eq("-- banner")
         end
       end
 
       context "with a -- inline comment" do
-        let(:sql) { "SELECT id -- primary key\nFROM users" }
+        let(:sql) do
+          <<~SQL.chomp
+            SELECT id -- primary key
+            FROM users
+          SQL
+        end
 
         it "replaces the comment with a sentinel" do
-          expect(stripped_sql).to match(%r{\ASELECT id /\*__sqlb_\d+__\*/\nFROM users\z})
+          expect(output.stripped_sql).to match(%r{\ASELECT id /\*__sqlb_\d+__\*/\nFROM users\z})
         end
 
         it "records the comment as :inline" do
-          expect(comment_map.values.first[:type]).to eq(:inline)
+          expect(output.comment_map.values.first[:type]).to eq(:inline)
         end
 
         it "records the original comment text" do
-          expect(comment_map.values.first[:text]).to eq("-- primary key")
+          expect(output.comment_map.values.first[:text]).to eq("-- primary key")
         end
       end
 
@@ -101,15 +119,15 @@ RSpec.describe SqlBeautifier::CommentStripper do
         let(:sql) { "SELECT /* columns */ id FROM users" }
 
         it "replaces the comment with a sentinel" do
-          expect(stripped_sql).to match(%r{\ASELECT /\*__sqlb_\d+__\*/ id FROM users\z})
+          expect(output.stripped_sql).to match(%r{\ASELECT /\*__sqlb_\d+__\*/ id FROM users\z})
         end
 
         it "records the comment as :blocks" do
-          expect(comment_map.values.first[:type]).to eq(:blocks)
+          expect(output.comment_map.values.first[:type]).to eq(:blocks)
         end
 
         it "records the original comment text" do
-          expect(comment_map.values.first[:text]).to eq("/* columns */")
+          expect(output.comment_map.values.first[:text]).to eq("/* columns */")
         end
       end
 
@@ -117,19 +135,25 @@ RSpec.describe SqlBeautifier::CommentStripper do
         let(:sql) { "SELECT/*comment*/id FROM users" }
 
         it "inserts spaces around the sentinel for token separation" do
-          expect(stripped_sql).to match(%r{\ASELECT /\*__sqlb_\d+__\*/ id FROM users\z})
+          expect(output.stripped_sql).to match(%r{\ASELECT /\*__sqlb_\d+__\*/ id FROM users\z})
         end
       end
 
       context "with consecutive separate-line comments" do
-        let(:sql) { "-- line one\n-- line two\nSELECT 1" }
+        let(:sql) do
+          <<~SQL.chomp
+            -- line one
+            -- line two
+            SELECT 1
+          SQL
+        end
 
         it "groups them into a single sentinel" do
-          expect(stripped_sql).to match(%r{\A/\*__sqlb_\d+__\*/\nSELECT 1\z})
+          expect(output.stripped_sql).to match(%r{\A/\*__sqlb_\d+__\*/\nSELECT 1\z})
         end
 
         it "records the grouped text" do
-          expect(comment_map.values.first[:text]).to eq("-- line one\n-- line two")
+          expect(output.comment_map.values.first[:text]).to eq("-- line one\n-- line two")
         end
       end
 
@@ -144,11 +168,11 @@ RSpec.describe SqlBeautifier::CommentStripper do
         end
 
         it "groups the banner into a single sentinel" do
-          expect(comment_map.length).to eq(1)
+          expect(output.comment_map.length).to eq(1)
         end
 
         it "preserves the full banner text" do
-          expect(comment_map.values.first[:text]).to eq(<<~TEXT.chomp)
+          expect(output.comment_map.values.first[:text]).to eq(<<~TEXT.chomp)
             --------------------------------------------------------------------------------
             -- Base Query (34ms)
             --------------------------------------------------------------------------------
@@ -163,44 +187,64 @@ RSpec.describe SqlBeautifier::CommentStripper do
 
     context "when removable_types is [:inline]" do
       let(:removable_types) { %i[inline] }
-      let(:sql) { "-- banner\nSELECT id -- pk\nFROM /* src */ users" }
+
+      let(:sql) do
+        <<~SQL.chomp
+          -- banner
+          SELECT id -- pk
+          FROM /* src */ users
+        SQL
+      end
 
       it "strips the inline comment" do
-        expect(stripped_sql).not_to include("-- pk")
+        expect(output.stripped_sql).not_to include("-- pk")
       end
 
       it "preserves the separate-line comment as a sentinel" do
-        expect(comment_map.values).to include(a_hash_including(type: :separate_line))
+        expect(output.comment_map.values).to include(a_hash_including(type: :line))
       end
 
       it "preserves the block comment as a sentinel" do
-        expect(comment_map.values).to include(a_hash_including(type: :blocks))
+        expect(output.comment_map.values).to include(a_hash_including(type: :blocks))
       end
     end
 
-    context "when removable_types is [:separate_line]" do
-      let(:removable_types) { %i[separate_line] }
-      let(:sql) { "-- banner\nSELECT id -- pk\nFROM users" }
+    context "when removable_types is [:line]" do
+      let(:removable_types) { %i[line] }
+
+      let(:sql) do
+        <<~SQL.chomp
+          -- banner
+          SELECT id -- pk
+          FROM users
+        SQL
+      end
 
       it "strips the separate-line comment" do
-        expect(stripped_sql).not_to include("banner")
+        expect(output.stripped_sql).not_to include("banner")
       end
 
       it "preserves the inline comment as a sentinel" do
-        expect(comment_map.values).to include(a_hash_including(type: :inline, text: "-- pk"))
+        expect(output.comment_map.values).to include(a_hash_including(type: :inline, text: "-- pk"))
       end
     end
 
     context "when removable_types is [:blocks]" do
       let(:removable_types) { %i[blocks] }
-      let(:sql) { "SELECT id -- pk\nFROM /* src */ users" }
+
+      let(:sql) do
+        <<~SQL.chomp
+          SELECT id -- pk
+          FROM /* src */ users
+        SQL
+      end
 
       it "strips the block comment" do
-        expect(stripped_sql).not_to include("src")
+        expect(output.stripped_sql).not_to include("src")
       end
 
       it "preserves the inline comment as a sentinel" do
-        expect(comment_map.values).to include(a_hash_including(type: :inline, text: "-- pk"))
+        expect(output.comment_map.values).to include(a_hash_including(type: :inline, text: "-- pk"))
       end
     end
 
@@ -213,11 +257,11 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT * FROM users WHERE name = 'test--value'" }
 
       it "preserves the string content" do
-        expect(stripped_sql).to eq("SELECT * FROM users WHERE name = 'test--value'")
+        expect(output.stripped_sql).to eq("SELECT * FROM users WHERE name = 'test--value'")
       end
 
       it "does not record a comment" do
-        expect(comment_map).to be_empty
+        expect(output.comment_map).to be_empty
       end
     end
 
@@ -226,7 +270,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT * FROM users WHERE name = 'test/**/value'" }
 
       it "preserves the string content" do
-        expect(stripped_sql).to eq("SELECT * FROM users WHERE name = 'test/**/value'")
+        expect(output.stripped_sql).to eq("SELECT * FROM users WHERE name = 'test/**/value'")
       end
     end
 
@@ -235,7 +279,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { 'SELECT "User--Name" FROM users' }
 
       it "preserves the identifier content" do
-        expect(stripped_sql).to eq('SELECT "User--Name" FROM users')
+        expect(output.stripped_sql).to eq('SELECT "User--Name" FROM users')
       end
     end
 
@@ -244,7 +288,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { 'SELECT "Cost/*Center*/Code" FROM users' }
 
       it "preserves the identifier content" do
-        expect(stripped_sql).to eq('SELECT "Cost/*Center*/Code" FROM users')
+        expect(output.stripped_sql).to eq('SELECT "Cost/*Center*/Code" FROM users')
       end
     end
 
@@ -253,7 +297,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT * FROM users WHERE name = 'O''Brien' -- name" }
 
       it "handles the escaped quote and strips the comment" do
-        expect(stripped_sql).to eq("SELECT * FROM users WHERE name = 'O''Brien' ")
+        expect(output.stripped_sql).to eq("SELECT * FROM users WHERE name = 'O''Brien' ")
       end
     end
 
@@ -266,11 +310,11 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT id FROM users" }
 
       it "returns the sql unchanged" do
-        expect(stripped_sql).to eq("SELECT id FROM users")
+        expect(output.stripped_sql).to eq("SELECT id FROM users")
       end
 
       it "returns an empty comment map" do
-        expect(comment_map).to be_empty
+        expect(output.comment_map).to be_empty
       end
     end
 
@@ -279,7 +323,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "-- just a comment" }
 
       it "replaces with a sentinel" do
-        expect(stripped_sql).to match(%r{\A/\*__sqlb_\d+__\*/\n\z})
+        expect(output.stripped_sql).to match(%r{\A/\*__sqlb_\d+__\*/\n\z})
       end
     end
 
@@ -288,39 +332,60 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "/*header*/SELECT id FROM users" }
 
       it "strips the comment without a leading space when output is empty" do
-        expect(stripped_sql).to eq("SELECT id FROM users")
+        expect(output.stripped_sql).to eq("SELECT id FROM users")
       end
     end
 
     context "with a multi-line block comment" do
       let(:removable_types) { :none }
-      let(:sql) { "SELECT id\n/* multi\nline\ncomment */\nFROM users" }
+
+      let(:sql) do
+        <<~SQL.chomp
+          SELECT id
+          /* multi
+          line
+          comment */
+          FROM users
+        SQL
+      end
 
       it "records the type as :blocks" do
-        expect(comment_map.values.first[:type]).to eq(:blocks)
+        expect(output.comment_map.values.first[:type]).to eq(:blocks)
       end
 
       it "preserves the full block comment text" do
-        expect(comment_map.values.first[:text]).to eq("/* multi\nline\ncomment */")
+        expect(output.comment_map.values.first[:text]).to eq("/* multi\nline\ncomment */")
       end
     end
 
     context "with a separate-line comment with leading whitespace" do
       let(:removable_types) { :none }
-      let(:sql) { "  -- indented comment\nSELECT 1" }
 
-      it "classifies as :separate_line" do
-        expect(comment_map.values.first[:type]).to eq(:separate_line)
+      let(:sql) do
+        <<~SQL.chomp
+          \t-- indented comment
+          SELECT 1
+        SQL
+      end
+
+      it "classifies as :line" do
+        expect(output.comment_map.values.first[:type]).to eq(:line)
       end
     end
 
     context "with multiple mixed comments" do
       let(:removable_types) { :none }
-      let(:sql) { "/* header */ SELECT id -- inline\n-- separate\nFROM users" }
+
+      let(:sql) do
+        <<~SQL.chomp
+          /* header */ SELECT id -- inline
+          -- separate
+          FROM users
+        SQL
+      end
 
       it "records all three comment types" do
-        types = comment_map.values.map { |entry| entry[:type] }
-        expect(types).to contain_exactly(:blocks, :inline, :separate_line)
+        expect(output.comment_map.values.map { |entry| entry[:type] }).to contain_exactly(:blocks, :inline, :line)
       end
     end
 
@@ -333,7 +398,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT 1" }
 
       it "raises an ArgumentError" do
-        expect { result }.to raise_error(ArgumentError, %r{Unsupported removable_types})
+        expect { output }.to raise_error(ArgumentError, %r{Unsupported removable_types})
       end
     end
 
@@ -342,7 +407,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT 1" }
 
       it "raises an ArgumentError" do
-        expect { result }.to raise_error(ArgumentError, %r{Unsupported removable_types})
+        expect { output }.to raise_error(ArgumentError, %r{Unsupported removable_types})
       end
     end
 
@@ -351,7 +416,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT 1" }
 
       it "raises an ArgumentError" do
-        expect { result }.to raise_error(ArgumentError, %r{Unsupported removable_types})
+        expect { output }.to raise_error(ArgumentError, %r{Unsupported removable_types})
       end
     end
 
@@ -360,7 +425,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT 1" }
 
       it "raises an ArgumentError" do
-        expect { result }.to raise_error(ArgumentError, %r{bogus})
+        expect { output }.to raise_error(ArgumentError, %r{bogus})
       end
     end
 
@@ -369,7 +434,7 @@ RSpec.describe SqlBeautifier::CommentStripper do
       let(:sql) { "SELECT 1" }
 
       it "raises an ArgumentError" do
-        expect { result }.to raise_error(ArgumentError, %r{foo.*bar})
+        expect { output }.to raise_error(ArgumentError, %r{foo.*bar})
       end
     end
   end

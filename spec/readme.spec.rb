@@ -235,7 +235,12 @@ RSpec.describe "README examples" do
   end
 
   context "comments" do
-    let(:value) { "-- Base Query\nSELECT id /* primary key */ FROM users WHERE active = true" }
+    let(:value) do
+      <<~SQL.chomp
+        -- Base Query
+        SELECT id /* primary key */ FROM users WHERE active = true
+      SQL
+    end
 
     it "preserves line and block comments with compact spacing" do
       expect(output).to eq(<<~SQL)

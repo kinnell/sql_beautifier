@@ -6,7 +6,18 @@ module SqlBeautifier
       KEYWORD = "order by"
 
       def call
-        "#{keyword_prefix}#{@value.strip}"
+        expressions = parse_expressions(@value)
+        expressions_output = expressions.map(&:render).join(", ")
+
+        "#{keyword_prefix}#{expressions_output}"
+      end
+
+      private
+
+      def parse_expressions(value)
+        Tokenizer.split_by_top_level_commas(value).map do |item|
+          SortExpression.parse(item)
+        end
       end
     end
   end

@@ -1,83 +1,18 @@
 # frozen_string_literal: true
 
-RSpec.describe SqlBeautifier::SubqueryFormatter do
-  describe ".find_top_level_subquery" do
-    subject(:subquery_position) { described_class.find_top_level_subquery(text, start_position) }
-
-    let(:start_position) { 0 }
-
-    context "with a top-level subquery" do
-      let(:text) { "id in (select user_id from orders)" }
-
-      it "returns the opening parenthesis position" do
-        expect(subquery_position).to eq(6)
-      end
-    end
-
-    context "with nested parentheses before the subquery" do
-      let(:text) { "count(id) in (select user_id from orders)" }
-
-      it "returns the subquery opening parenthesis position" do
-        expect(subquery_position).to eq(13)
-      end
-    end
-
-    context "with a subquery nested inside another parenthesis group" do
-      let(:text) { "where (id in (select user_id from orders))" }
-
-      it "returns the nested subquery opening parenthesis position" do
-        expect(subquery_position).to eq(13)
-      end
-    end
-
-    context "with select inside a string literal" do
-      let(:text) { "name = '(select bad)' and id in (select 1)" }
-
-      it "ignores the string content and returns the real subquery position" do
-        expect(subquery_position).to eq(32)
-      end
-    end
-
-    context "with select inside a double-quoted identifier" do
-      let(:text) { 'name = "(select bad)" and id in (select 1)' }
-
-      it "ignores the identifier content and returns the real subquery position" do
-        expect(subquery_position).to eq(32)
-      end
-    end
-
-    context "without any subquery" do
-      let(:text) { "id = 1 and name = 'test'" }
-
-      it "returns nil" do
-        expect(subquery_position).to be_nil
-      end
-    end
-
-    context "with non-select parentheses only" do
-      let(:text) { "count(id) + sum(amount)" }
-
-      it "returns nil" do
-        expect(subquery_position).to be_nil
-      end
-    end
-
-    context "with identifiers that start with select" do
-      let(:text) { "where result = (selection_score + 1)" }
-
-      it "does not treat the identifier as a subquery" do
-        expect(subquery_position).to be_nil
-      end
-    end
-  end
-
-  describe ".format" do
-    subject(:output) { described_class.format(text, base_indent) }
-
-    let(:base_indent) { 0 }
+RSpec.describe SqlBeautifier::Query, "subquery formatting" do
+  describe ".format_subqueries_in_text" do
+    let(:output) { described_class.format_subqueries_in_text(text, depth: depth) }
+    let(:depth) { 0 }
 
     context "with no subqueries" do
-      let(:text) { "select  id\n\nfrom    Users u" }
+      let(:text) do
+        <<~SQL.chomp
+          select  id
+
+          from    Users u
+        SQL
+      end
 
       it "passes text through unchanged" do
         expect(output).to eq(text)
@@ -87,21 +22,32 @@ RSpec.describe SqlBeautifier::SubqueryFormatter do
     context "with a simple subquery" do
       let(:text) { "where   id in (select user_id from orders)" }
 
-      it "formats the subquery with indentation" do
+      it "preserves the outer clause" do
         expect(output).to include("where   id in (")
+      end
+
+      it "indents the subquery select" do
         expect(output).to include("          select  user_id")
+      end
+
+      it "indents the subquery from" do
         expect(output).to include("          from    Orders o")
+      end
+
+      it "closes the subquery with indentation" do
         expect(output).to include("        )")
-        expect(output).to include(")")
       end
     end
 
-    context "with a subquery at non-zero base indent" do
+    context "with a subquery at non-zero depth" do
       let(:text) { "where   id in (select user_id from orders)" }
-      let(:base_indent) { 4 }
+      let(:depth) { 4 }
 
-      it "indents the subquery content relative to the base" do
+      it "indents the subquery content relative to the depth" do
         expect(output).to include("              select  user_id")
+      end
+
+      it "indents the closing paren relative to the depth" do
         expect(output).to include("            )")
       end
     end
@@ -109,7 +55,11 @@ RSpec.describe SqlBeautifier::SubqueryFormatter do
     context "with :indent_spaces configured" do
       let(:text) { "where   id in (select user_id from orders)" }
 
-      before { SqlBeautifier.configure { |config| config.indent_spaces = 6 } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.indent_spaces = 6
+        end
+      end
 
       it "uses the configured indentation width for subquery content" do
         expect(output).to include("              select  user_id")
@@ -119,7 +69,11 @@ RSpec.describe SqlBeautifier::SubqueryFormatter do
     context "with uppercase where text" do
       let(:text) { "WHERE   id in (select user_id from orders)" }
 
-      before { SqlBeautifier.configure { |config| config.keyword_case = :upper } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.keyword_case = :upper
+        end
+      end
 
       it "applies where-specific base indentation case-insensitively" do
         expect(output).to include("          SELECT  user_id")
@@ -129,9 +83,15 @@ RSpec.describe SqlBeautifier::SubqueryFormatter do
     context "with multiple subqueries" do
       let(:text) { "where   id in (select user_id from orders) and status in (select code from statuses)" }
 
-      it "formats each subquery independently" do
+      it "formats the first subquery" do
         expect(output).to include("id in (")
+      end
+
+      it "formats the second subquery" do
         expect(output).to include("status in (")
+      end
+
+      it "formats both select keywords" do
         expect(output.scan("select  ").length).to eq(2)
       end
     end
@@ -139,11 +99,16 @@ RSpec.describe SqlBeautifier::SubqueryFormatter do
     context "with a subquery nested inside additional parentheses" do
       let(:text) { "where   (id in (select user_id from orders))" }
 
-      it "formats the nested subquery" do
+      it "preserves the outer parentheses" do
         expect(output).to include("where   (id in (")
+      end
+
+      it "indents the nested subquery select" do
         expect(output).to include("            select  user_id")
+      end
+
+      it "indents the nested subquery from" do
         expect(output).to include("            from    Orders o")
-        expect(output).to include("))")
       end
     end
 
@@ -152,7 +117,44 @@ RSpec.describe SqlBeautifier::SubqueryFormatter do
 
       it "does not treat the identifier text as a subquery" do
         expect(output).to include('where   note = "(select bad)" and id in (')
+      end
+
+      it "formats the real subquery" do
         expect(output).to include("          select  user_id")
+      end
+    end
+  end
+
+  describe ".format_as_subquery" do
+    context "with a simple query" do
+      let(:output) { described_class.format_as_subquery("select user_id from orders", base_indent: 8) }
+
+      it "starts with an opening paren" do
+        expect(output).to start_with("(")
+      end
+
+      it "ends with a closing paren" do
+        expect(output).to end_with(")")
+      end
+
+      it "indents the subquery select" do
+        expect(output).to include("          select  user_id")
+      end
+
+      it "indents the closing paren" do
+        expect(output).to include("        )")
+      end
+    end
+
+    context "with base_indent of 0" do
+      let(:output) { described_class.format_as_subquery("select 1", base_indent: 0) }
+
+      it "indents from column 0" do
+        expect(output).to include("  select  1")
+      end
+
+      it "ends with a closing paren" do
+        expect(output).to end_with(")")
       end
     end
   end

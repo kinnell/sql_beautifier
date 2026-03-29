@@ -1,15 +1,53 @@
 # frozen_string_literal: true
 
 module SqlBeautifier
-  class CommentStripper
+  class CommentParser
     SENTINEL_PREFIX = "/*__sqlb_"
     SENTINEL_SUFFIX = "__*/"
     SENTINEL_PATTERN = %r{/\*__sqlb_(\d+)__\*/}
 
-    Result = Struct.new(:stripped_sql, :comment_map)
+    Result = Struct.new(:stripped_sql, :comment_map, :comments)
 
     def self.call(sql, removable_types)
       new(sql, removable_types).call
+    end
+
+    def self.restore(formatted_sql, comment_map)
+      return formatted_sql if comment_map.empty?
+
+      result = formatted_sql
+
+      comment_map.each do |index, entry|
+        sentinel = "#{SENTINEL_PREFIX}#{index}#{SENTINEL_SUFFIX}"
+
+        result = begin
+          case entry[:type]
+          when :blocks
+            result.sub(sentinel, entry[:text])
+          when :line
+            result.sub(%r{#{Regexp.escape(sentinel)}[ \n]?}, "#{entry[:text]}\n")
+          when :inline
+            restore_inline_comment(result, sentinel, entry[:text])
+          else
+            result
+          end
+        end
+      end
+
+      result
+    end
+
+    def self.restore_inline_comment(sql, sentinel, comment_text)
+      pattern = %r{ ?#{Regexp.escape(sentinel)}([^\n]*)}
+      sql.sub(pattern) do
+        trailing_content = Regexp.last_match(1)
+
+        if trailing_content.strip.empty?
+          " #{comment_text}"
+        else
+          "#{trailing_content.strip} #{comment_text}"
+        end
+      end
     end
 
     def initialize(sql, removable_types)
@@ -17,9 +55,10 @@ module SqlBeautifier
       @removal_set = resolve_removal_set(removable_types)
       @output = +""
       @comment_map = {}
+      @comments = []
       @sentinel_index = 0
       @position = 0
-      @pending_separate_line_comments = []
+      @pending_line_comments = []
     end
 
     def call
@@ -31,30 +70,30 @@ module SqlBeautifier
         elsif @in_double_quoted_identifier
           consume_double_quoted_character!(character)
         elsif character == Constants::SINGLE_QUOTE
-          flush_pending_separate_line_comments!
+          flush_pending_line_comments!
           @in_single_quoted_string = true
           @output << character
           @position += 1
         elsif character == Constants::DOUBLE_QUOTE
-          flush_pending_separate_line_comments!
+          flush_pending_line_comments!
           @in_double_quoted_identifier = true
           @output << character
           @position += 1
         elsif line_comment_start?
           handle_line_comment!
         elsif block_comment_start?
-          flush_pending_separate_line_comments!
+          flush_pending_line_comments!
           handle_block_comment!
         else
-          flush_pending_separate_line_comments! unless character == "\n"
+          flush_pending_line_comments! unless character == "\n"
           @output << character
           @position += 1
         end
       end
 
-      flush_pending_separate_line_comments!
+      flush_pending_line_comments!
 
-      Result.new(@output, @comment_map)
+      Result.new(@output, @comment_map, @comments)
     end
 
     private
@@ -64,16 +103,16 @@ module SqlBeautifier
       when :none
         []
       when :all
-        Configuration::COMMENT_TYPES.dup
+        Comment::TYPES.dup
       when Array
-        invalid_types = removable_types - Configuration::COMMENT_TYPES
-        raise ArgumentError, "Unsupported removable_types entries: #{invalid_types.inspect}. Expected elements of #{Configuration::COMMENT_TYPES.inspect}" if invalid_types.any?
+        invalid_types = removable_types - Comment::TYPES
+        raise ArgumentError, "Unsupported removable_types entries: #{invalid_types.inspect}. Expected elements of #{Comment::TYPES.inspect}" if invalid_types.any?
 
         removable_types
-      when *Configuration::COMMENT_TYPES
+      when *Comment::TYPES
         [removable_types]
       else
-        raise ArgumentError, "Unsupported removable_types: #{removable_types.inspect}. Expected :none, :all, an Array, or one of #{Configuration::COMMENT_TYPES.inspect}"
+        raise ArgumentError, "Unsupported removable_types: #{removable_types.inspect}. Expected :none, :all, an Array, or one of #{Comment::TYPES.inspect}"
       end
     end
 
@@ -112,8 +151,10 @@ module SqlBeautifier
     end
 
     def handle_line_comment!
-      comment_type = separate_line_comment? ? :separate_line : :inline
+      comment_type = line_comment? ? :line : :inline
       comment_text = extract_line_comment_text
+
+      @comments << Comment.new(comment_text, type: comment_type, renderable: !removable?(comment_type))
 
       if removable?(comment_type)
         strip_line_comment!
@@ -122,7 +163,7 @@ module SqlBeautifier
       end
     end
 
-    def separate_line_comment?
+    def line_comment?
       line_start = @output.rindex("\n")
       preceding_content = begin
         if line_start
@@ -147,11 +188,11 @@ module SqlBeautifier
     def strip_line_comment!; end
 
     def preserve_line_comment!(comment_type, comment_text)
-      if comment_type == :separate_line
-        @pending_separate_line_comments << comment_text
+      if comment_type == :line
+        @pending_line_comments << comment_text
         @position += 1 if @position < @sql.length && @sql[@position] == "\n"
       else
-        flush_pending_separate_line_comments!
+        flush_pending_line_comments!
         sentinel = build_sentinel(comment_type, comment_text)
         @output << sentinel
       end
@@ -159,6 +200,8 @@ module SqlBeautifier
 
     def handle_block_comment!
       comment_text = extract_block_comment_text
+
+      @comments << Comment.new(comment_text, type: :blocks, renderable: !removable?(:blocks))
 
       if removable?(:blocks)
         strip_block_comment!
@@ -192,16 +235,16 @@ module SqlBeautifier
       @output << " " unless @output.empty? || @output[-1] =~ Constants::WHITESPACE_CHARACTER_REGEX
     end
 
-    def flush_pending_separate_line_comments!
-      return if @pending_separate_line_comments.empty?
+    def flush_pending_line_comments!
+      return if @pending_line_comments.empty?
 
-      grouped_text = @pending_separate_line_comments.join("\n")
-      sentinel = build_sentinel(:separate_line, grouped_text)
+      grouped_text = @pending_line_comments.join("\n")
+      sentinel = build_sentinel(:line, grouped_text)
 
       @output << sentinel
       @output << "\n"
 
-      @pending_separate_line_comments.clear
+      @pending_line_comments.clear
     end
 
     def build_sentinel(comment_type, comment_text)

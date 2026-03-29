@@ -64,7 +64,11 @@ RSpec.describe SqlBeautifier::StatementAssembler do
     context "with :trailing_semicolon set to false" do
       let(:value) { "SELECT id FROM constituents; SELECT id FROM departments" }
 
-      before { SqlBeautifier.configure { |config| config.trailing_semicolon = false } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.trailing_semicolon = false
+        end
+      end
 
       it "joins statements without semicolons" do
         expect(output).to eq(<<~SQL)
@@ -80,7 +84,11 @@ RSpec.describe SqlBeautifier::StatementAssembler do
     context "with :trailing_semicolon set to false and a single statement" do
       let(:value) { "SELECT id FROM users" }
 
-      before { SqlBeautifier.configure { |config| config.trailing_semicolon = false } }
+      before do
+        SqlBeautifier.configure do |config|
+          config.trailing_semicolon = false
+        end
+      end
 
       it "ends with a newline without a semicolon" do
         expect(output).to end_with("u\n")

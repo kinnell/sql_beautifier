@@ -10,34 +10,45 @@ module SqlBeautifier
 
       def call
         prefix, remaining_columns = extract_prefix
-        columns = Tokenizer.split_by_top_level_commas(remaining_columns)
+        @expressions = parse_expressions(remaining_columns)
 
-        return format_with_prefix(prefix, columns) if prefix
-        return keyword_line(columns.first) if columns.length == 1
+        return format_with_prefix(prefix) if prefix
+        return keyword_line(@expressions.first.render) if @expressions.length == 1
 
-        format_columns_list(columns)
+        format_columns_list
       end
 
       private
 
-      def keyword_line(column)
-        "#{keyword_prefix}#{column.strip}"
+      def parse_expressions(value)
+        Tokenizer.split_by_top_level_commas(value).map do |column|
+          Expression.parse(column)
+        end
       end
 
-      def continuation_line(column)
-        "#{continuation_indent}#{column.strip}"
+      def keyword_line(text)
+        "#{keyword_prefix}#{text.strip}"
       end
 
-      def format_with_prefix(prefix, columns)
+      def continuation_line(text)
+        "#{continuation_indent}#{text.strip}"
+      end
+
+      def format_with_prefix(prefix)
         first_line = "#{keyword_prefix}#{prefix}"
-        column_lines = columns.map { |column| continuation_line(column) }
+        column_lines = @expressions.map do |expression|
+          continuation_line(expression.render)
+        end
 
         "#{first_line}\n#{column_lines.join(",\n")}"
       end
 
-      def format_columns_list(columns)
-        column_lines = columns.map { |column| continuation_line(column) }
-        column_lines[0] = keyword_line(columns.first)
+      def format_columns_list
+        column_lines = @expressions.map do |expression|
+          continuation_line(expression.render)
+        end
+
+        column_lines[0] = keyword_line(@expressions.first.render)
 
         column_lines.join(",\n")
       end
@@ -61,11 +72,13 @@ module SqlBeautifier
         opening_parenthesis_position = stripped_value.index(Constants::OPEN_PARENTHESIS, distinct_on_position)
         return [nil, stripped_value] unless opening_parenthesis_position
 
-        closing_parenthesis_position = Tokenizer.find_matching_parenthesis(stripped_value, opening_parenthesis_position)
+        closing_parenthesis_position = Scanner.new(stripped_value).find_matching_parenthesis(opening_parenthesis_position)
         return [nil, stripped_value] unless closing_parenthesis_position
 
         prefix = stripped_value[0..closing_parenthesis_position]
-        remaining_columns = stripped_value[(closing_parenthesis_position + 1)..].strip.sub(LEADING_COMMA_PATTERN, "")
+        columns_text = stripped_value[(closing_parenthesis_position + 1)..]
+        stripped_columns_text = columns_text.strip
+        remaining_columns = stripped_columns_text.sub(LEADING_COMMA_PATTERN, "")
 
         [prefix, remaining_columns]
       end

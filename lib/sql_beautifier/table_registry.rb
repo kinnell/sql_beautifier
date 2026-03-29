@@ -2,44 +2,51 @@
 
 module SqlBeautifier
   class TableRegistry
-    attr_reader :table_map
+    attr_reader :references
 
     def initialize(from_content)
       @from_content = from_content
-      @table_map = {}
       @alias_strategy = SqlBeautifier.config_for(:alias_strategy)
+      @references = []
+      @references_by_name = {}
       build!
     end
 
     def alias_for(table_name)
-      @table_map[table_name]
+      @references_by_name[table_name]&.alias_name
+    end
+
+    def reference_for(table_name)
+      @references_by_name[table_name]
+    end
+
+    def table_map
+      @references_by_name.transform_values(&:alias_name)
     end
 
     def apply_aliases(text)
-      return text if @table_map.empty?
+      return text if @references_by_name.empty?
 
+      scanner = Scanner.new(text)
       output = +""
-      position = 0
 
-      while position < text.length
-        character = text[position]
-
-        case character
+      until scanner.finished?
+        case scanner.current_char
         when Constants::SINGLE_QUOTE
-          position = copy_string_literal!(text, position, output)
+          output << scanner.consume_single_quoted_string!
         when Constants::DOUBLE_QUOTE
-          position = copy_quoted_identifier!(text, position, output)
+          output << scanner.consume_double_quoted_identifier!
         else
-          replacement = find_table_replacement_at(text, position)
+          replacement = find_table_replacement_at(text, scanner.position, scanner)
 
           if replacement
             table_name, table_alias = replacement
 
             output << "#{table_alias}."
-            position += table_name.length + 1
+            scanner.advance!(table_name.length + 1)
           else
-            output << character
-            position += 1
+            output << scanner.current_char
+            scanner.advance!
           end
         end
       end
@@ -50,51 +57,29 @@ module SqlBeautifier
     private
 
     def build!
-      table_entries = extract_table_entries(@from_content)
+      @references = parse_references(@from_content)
+      @references.each { |reference| @references_by_name[reference.name] = reference }
 
-      if @alias_strategy == :none
-        table_entries.each do |table_entry|
-          next unless table_entry[:explicit_alias]
+      assign_computed_aliases! unless @alias_strategy == :none
 
-          @table_map[table_entry[:table_name]] = table_entry[:explicit_alias]
-        end
-      else
-        initials_occurrence_counts = count_initials_occurrences(table_entries)
-        used_aliases = []
-        assign_aliases!(table_entries, initials_occurrence_counts, used_aliases)
-      end
-
-      @tables_by_descending_length = @table_map.keys.sort_by { |name| -name.length }.freeze
+      aliased_names = @references_by_name.select { |_name, reference| reference.alias_name }.keys
+      @tables_by_descending_length = aliased_names.sort_by { |name| -name.length }.freeze
     end
 
-    def count_initials_occurrences(table_entries)
-      occurrence_counts = Hash.new(0)
-
-      table_entries.each do |table_entry|
-        next if table_entry[:explicit_alias]
-
-        table_name = table_entry[:table_name]
-        occurrence_counts[table_initials(table_name)] += 1
-      end
-
-      occurrence_counts
-    end
-
-    def assign_aliases!(table_entries, initials_occurrence_counts, used_aliases)
+    def assign_computed_aliases!
+      initials_occurrence_counts = count_initials_occurrences
       duplicate_initials_counts = Hash.new(0)
       collision_counts = Hash.new(0)
+      used_aliases = []
 
-      table_entries.each do |table_entry|
-        table_name = table_entry[:table_name]
-        explicit_alias = table_entry[:explicit_alias]
-
-        if explicit_alias
-          @table_map[table_name] = explicit_alias
-          used_aliases << explicit_alias
+      @references.each do |reference|
+        if reference.explicit_alias
+          @references_by_name[reference.name] = reference
+          used_aliases << reference.explicit_alias
           next
         end
 
-        initials = table_initials(table_name)
+        initials = table_initials(reference.name)
         duplicate_initials_counts[initials] += 1 if initials_occurrence_counts[initials] > 1
 
         candidate_alias = begin
@@ -115,60 +100,30 @@ module SqlBeautifier
           end
         end
 
-        @table_map[table_name] = candidate_alias
+        reference.assign_alias!(candidate_alias)
         used_aliases << candidate_alias
       end
     end
 
-    def copy_string_literal!(text, position, output)
-      output << text[position]
-      position += 1
+    def count_initials_occurrences
+      occurrence_counts = Hash.new(0)
 
-      while position < text.length
-        character = text[position]
-        output << character
+      @references.each do |reference|
+        next if reference.explicit_alias
 
-        if Tokenizer.escaped_single_quote?(text, position)
-          position += 1
-          output << text[position]
-        elsif character == Constants::SINGLE_QUOTE
-          return position + 1
-        end
-
-        position += 1
+        occurrence_counts[table_initials(reference.name)] += 1
       end
 
-      position
+      occurrence_counts
     end
 
-    def copy_quoted_identifier!(text, position, output)
-      output << text[position]
-      position += 1
-
-      while position < text.length
-        character = text[position]
-        output << character
-
-        if Tokenizer.escaped_double_quote?(text, position)
-          position += 1
-          output << text[position]
-        elsif character == Constants::DOUBLE_QUOTE
-          return position + 1
-        end
-
-        position += 1
-      end
-
-      position
-    end
-
-    def find_table_replacement_at(text, position)
-      return unless Tokenizer.word_boundary?(Tokenizer.character_before(text, position))
+    def find_table_replacement_at(text, position, scanner)
+      return unless scanner.word_boundary?(scanner.character_before(position))
 
       @tables_by_descending_length.each do |table_name|
         next unless text[position, table_name.length + 1] == "#{table_name}."
 
-        return [table_name, @table_map[table_name]]
+        return [table_name, @references_by_name[table_name].alias_name]
       end
 
       nil
@@ -180,50 +135,21 @@ module SqlBeautifier
       table_name.split("_").map { |segment| segment[0] }.join
     end
 
-    def extract_table_entries(from_content)
+    def parse_references(from_content)
       split_segments = from_content.strip.split(Constants::JOIN_KEYWORD_PATTERN)
 
-      table_entries = []
+      references = []
 
       primary_segment = split_segments.shift.strip
-      table_entries << extract_table_entry(primary_segment)
+      references << TableReference.parse(primary_segment)
 
       split_segments.each_slice(2) do |_join_keyword, join_content|
         next unless join_content
 
-        table_entries << extract_table_entry(join_content)
+        references << TableReference.parse(join_content)
       end
 
-      table_entries.compact
-    end
-
-    def extract_table_entry(segment_text)
-      table_specification = table_specification_text(segment_text)
-      table_name = Util.first_word(table_specification)
-      return unless table_name
-
-      {
-        table_name: table_name,
-        explicit_alias: extract_explicit_alias(table_specification),
-      }
-    end
-
-    def table_specification_text(segment_text)
-      on_keyword_position = Tokenizer.find_top_level_keyword(segment_text, "on")
-      return segment_text.strip unless on_keyword_position
-
-      segment_text[0...on_keyword_position].strip
-    end
-
-    def extract_explicit_alias(table_specification)
-      words = table_specification.strip.split(Constants::WHITESPACE_REGEX).grep_v(CommentStripper::SENTINEL_PATTERN)
-      return nil if words.length < 2
-
-      if words[1] == "as"
-        words[2]
-      else
-        words[1]
-      end
+      references.compact
     end
   end
 end

@@ -2,6 +2,16 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Introduce `Query` entity encapsulating parsed clauses, depth, table registry, compact detection, and subquery formatting — `Formatter` delegates clause assembly and rendering to `Query`, and `SubqueryFormatter` is eliminated
+- Introduce `CteQuery` and `CteDefinition` entities replacing `CteFormatter` — CTE parsing produces structured objects that render themselves
+- Introduce `CreateTableAs` entity replacing `CreateTableAsFormatter` — structured object with modifier, if-not-exists, table name, body query, and suffix
+- Introduce `Condition` tree model replacing flat `[conjunction, text]` pairs — parsed into leaf and group nodes with recursive rendering; eliminates `ConditionFormatter`
+- Extract `Scanner` class consolidating duplicated character-by-character scanning logic across seven modules
+- Consolidate `CommentStripper` and `CommentRestorer` into `CommentParser`
+- Introduce `TableReference` and `Join` entities — `Clauses::From` delegates join rendering to `Join#render`; `TableRegistry` holds `TableReference` objects instead of raw hashes
+- Introduce `Expression` entity for SELECT list items and `SortExpression` entity for ORDER BY items
+- Introduce `Comment` entity with `content`, `type`, and `renderable` attributes
+
 ## [0.6.0] - 2026-03-28
 
 - **Breaking**: comments are now preserved by default. Set `removable_comment_types = :all` to restore previous behavior of stripping all comments
