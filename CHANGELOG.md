@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.8.0] - 2026-03-29
+
 - Add compound query support for set operators (`UNION`, `UNION ALL`, `INTERSECT`, `INTERSECT ALL`, `EXCEPT`, `EXCEPT ALL`) — top-level set operator boundaries are detected via `Scanner`, each segment is independently formatted through the `Formatter` pipeline, and operators appear on their own line with blank-line separation
 - Introduce `CompoundQuery` entity class with `parse`/`render` following the `Base` + `dry-initializer` pattern established by `CteQuery` and `CreateTableAs`
 - Add trailing clause handling for compound queries — `ORDER BY` and `LIMIT` after the final segment are extracted and rendered separately below the last formatted segment
