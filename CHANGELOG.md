@@ -2,6 +2,19 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add DML statement formatting for `INSERT`, `UPDATE`, and `DELETE` — each statement type is routed to a dedicated entity class (`InsertQuery`, `UpdateQuery`, `DeleteQuery`) following the `Base` + `parse`/`render` pattern
+- Add `INSERT INTO ... VALUES` formatting with aligned column lists and multi-row value support
+- Add `INSERT INTO ... SELECT` formatting with automatic delegation of the SELECT portion to the existing formatter pipeline
+- Add `INSERT ... ON CONFLICT` and `INSERT ... RETURNING` clause support
+- Add `UPDATE ... SET` formatting with comma-separated assignment alignment and optional `FROM` and `WHERE` clauses
+- Add `DELETE FROM` formatting with optional `USING`, `WHERE`, and `RETURNING` clauses
+- Extract shared `render_where` and `render_returning` methods into `DmlRendering` module, included by `InsertQuery`, `UpdateQuery`, and `DeleteQuery`
+- Fix `InsertQuery` accepting malformed `VALUES` clause with no value tuples — empty rows from `scan_value_rows` are now treated as a parse failure
+- Fix `DeleteQuery` silently dropping table aliases (e.g. `DELETE FROM users u WHERE u.id = 1` rendered without the `u` alias, producing invalid SQL) — aliases (with or without `AS`) are now captured and included in the formatted output
+- Fix `DeleteQuery` mis-parsing `DELETE FROM ONLY <table>` — `ONLY` was read as the table name; the parser now bails out for unsupported modifiers
+- Fix `InsertQuery` silently dropping unrecognized trailing text after VALUES tuples (e.g. `VALUES (1) foo` would drop `foo`) — remaining text must start with `ON CONFLICT` or `RETURNING`, otherwise the parser bails out
+- Fix `DeleteQuery` silently dropping unrecognized text between table/alias and clause keywords — the parser now bails out when remaining text doesn't match any known clause
+
 ## [0.8.0] - 2026-03-29
 
 - Add compound query support for set operators (`UNION`, `UNION ALL`, `INTERSECT`, `INTERSECT ALL`, `EXCEPT`, `EXCEPT ALL`) — top-level set operator boundaries are detected via `Scanner`, each segment is independently formatted through the `Formatter` pipeline, and operators appear on their own line with blank-line separation
