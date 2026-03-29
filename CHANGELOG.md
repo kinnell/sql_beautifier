@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.7.0] - 2026-03-29
+
 - Introduce `Query` entity encapsulating parsed clauses, depth, table registry, compact detection, and subquery formatting — `Formatter` delegates clause assembly and rendering to `Query`, and `SubqueryFormatter` is eliminated
 - Introduce `CteQuery` and `CteDefinition` entities replacing `CteFormatter` — CTE parsing produces structured objects that render themselves
 - Introduce `CreateTableAs` entity replacing `CreateTableAsFormatter` — structured object with modifier, if-not-exists, table name, body query, and suffix
