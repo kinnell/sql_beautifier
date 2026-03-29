@@ -29,6 +29,9 @@ module SqlBeautifier
       create_table_as_result = CreateTableAs.parse(@normalized_value, depth: @depth)&.render
       return prepend_sentinels(create_table_as_result) if create_table_as_result
 
+      compound_result = CompoundQuery.parse(@normalized_value, depth: @depth)&.render
+      return prepend_sentinels(compound_result) if compound_result
+
       first_clause_position = Tokenizer.first_clause_position(@normalized_value)
       return prepend_sentinels("#{@normalized_value}\n") if first_clause_position.nil? || first_clause_position.positive?
 

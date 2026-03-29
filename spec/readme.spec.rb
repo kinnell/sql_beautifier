@@ -150,6 +150,49 @@ RSpec.describe "README examples" do
     end
   end
 
+  context "set operators with UNION ALL" do
+    let(:value) { "SELECT id, name FROM users WHERE active = true UNION ALL SELECT id, name FROM admins WHERE role = 'super'" }
+
+    it "formats each segment with the operator on its own line" do
+      expect(output).to eq(<<~SQL)
+        select  id,
+                name
+
+        from    Users u
+
+        where   active = true
+
+        union all
+
+        select  id,
+                name
+
+        from    Admins a
+
+        where   role = 'super';
+      SQL
+    end
+  end
+
+  context "set operators with trailing ORDER BY and LIMIT" do
+    let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins ORDER BY id LIMIT 10" }
+
+    it "renders trailing clauses after the last segment" do
+      expect(output).to eq(<<~SQL)
+        select  id
+        from    Users u
+
+        union all
+
+        select  id
+        from    Admins a
+
+        order by id
+        limit 10;
+      SQL
+    end
+  end
+
   context "string literals with escaped quotes" do
     let(:value) { "SELECT * FROM users WHERE name = 'O''Brien' AND status = 'Active'" }
 

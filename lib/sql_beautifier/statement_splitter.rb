@@ -85,6 +85,7 @@ module SqlBeautifier
       boundaries = []
       clause_seen = false
       current_statement_keyword = nil
+      after_set_operator = false
 
       until scanner.finished?
         next if scanner.skip_quoted_or_sentinel!
@@ -102,10 +103,20 @@ module SqlBeautifier
           scanner.advance!
         else
           if scanner.parenthesis_depth.zero?
+            matched_set_operator = keyword_match_at(scanner, Constants::SET_OPERATORS)
+
+            if matched_set_operator
+              after_set_operator = true
+              scanner.advance!(matched_set_operator.length)
+              next
+            end
+
             matched_statement_keyword = keyword_match_at(scanner, STATEMENT_KEYWORDS)
 
             if matched_statement_keyword
-              if clause_seen && !continuation_keyword?(current_statement_keyword, matched_statement_keyword)
+              if after_set_operator
+                after_set_operator = false
+              elsif clause_seen && !continuation_keyword?(current_statement_keyword, matched_statement_keyword)
                 boundaries << scanner.position
                 clause_seen = false
                 current_statement_keyword = matched_statement_keyword

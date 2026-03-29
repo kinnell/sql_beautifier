@@ -227,6 +227,61 @@ order by created_at desc
 limit 25;
 ```
 
+### Set Operators (UNION, INTERSECT, EXCEPT)
+
+Compound queries joined by set operators are detected and each segment is formatted independently. The operator keyword appears on its own line with blank-line separation:
+
+```ruby
+SqlBeautifier.call(<<~SQL)
+  SELECT id, name FROM users WHERE active = true
+  UNION ALL
+  SELECT id, name FROM admins WHERE role = 'super'
+SQL
+```
+
+Produces:
+
+```sql
+select  id,
+        name
+
+from    Users u
+
+where   active = true
+
+union all
+
+select  id,
+        name
+
+from    Admins a
+
+where   role = 'super';
+```
+
+Supported operators: `UNION`, `UNION ALL`, `INTERSECT`, `INTERSECT ALL`, `EXCEPT`, `EXCEPT ALL`. Multiple operators can be mixed in a single query. Trailing `ORDER BY` and `LIMIT` that apply to the compound result are rendered after the last segment:
+
+```ruby
+SqlBeautifier.call("SELECT id FROM users UNION ALL SELECT id FROM admins ORDER BY id LIMIT 10")
+```
+
+Produces:
+
+```sql
+select  id
+from    Users u
+
+union all
+
+select  id
+from    Admins a
+
+order by id
+limit 10;
+```
+
+Set operators inside parenthesized subqueries are handled correctly and do not split the outer query. Each segment is formatted with its own independent table registry, so alias collisions between segments are not a concern.
+
 ### String Literals
 
 Case is preserved inside single-quoted string literals, and escaped quotes (`''`) are handled correctly:
