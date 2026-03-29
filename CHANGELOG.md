@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.9.0] - 2026-03-29
+
 - Add DML statement formatting for `INSERT`, `UPDATE`, and `DELETE` — each statement type is routed to a dedicated entity class (`InsertQuery`, `UpdateQuery`, `DeleteQuery`) following the `Base` + `parse`/`render` pattern
 - Add `INSERT INTO ... VALUES` formatting with aligned column lists and multi-row value support
 - Add `INSERT INTO ... SELECT` formatting with automatic delegation of the SELECT portion to the existing formatter pipeline
