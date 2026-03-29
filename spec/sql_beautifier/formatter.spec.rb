@@ -1041,5 +1041,292 @@ RSpec.describe SqlBeautifier::Formatter do
         SQL
       end
     end
+
+    ############################################################################
+    ## INSERT Integration
+    ############################################################################
+
+    context "with a simple INSERT INTO...VALUES" do
+      let(:value) { "INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'alice@example.com')" }
+
+      it "formats the INSERT with column list and values" do
+        expect(output).to eq(<<~SQL)
+          insert into Users (
+              id,
+              name,
+              email
+          )
+          values  (1, 'Alice', 'alice@example.com')
+        SQL
+      end
+    end
+
+    context "with a multi-row INSERT" do
+      let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol')" }
+
+      it "formats each value row on its own line" do
+        expect(output).to eq(<<~SQL)
+          insert into Users (
+              id,
+              name
+          )
+          values  (1, 'Alice'),
+                  (2, 'Bob'),
+                  (3, 'Carol')
+        SQL
+      end
+    end
+
+    context "with INSERT...SELECT" do
+      let(:value) { "INSERT INTO users (id, name) SELECT id, name FROM temp_users WHERE active = true" }
+
+      it "formats the INSERT and delegates the SELECT" do
+        expect(output).to eq(<<~SQL)
+          insert into Users (
+              id,
+              name
+          )
+
+          select  id,
+                  name
+
+          from    Temp_Users tu
+
+          where   active = true
+        SQL
+      end
+    end
+
+    context "with INSERT...SELECT with JOINs" do
+      let(:value) { "INSERT INTO archive_orders (id, total) SELECT orders.id, orders.total FROM orders INNER JOIN users ON users.id = orders.user_id WHERE orders.status = 'closed'" }
+
+      it "formats the INSERT and delegates the SELECT with JOINs" do
+        expect(output).to eq(<<~SQL)
+          insert into Archive_Orders (
+              id,
+              total
+          )
+
+          select  o.id,
+                  o.total
+
+          from    Orders o
+                  inner join Users u on u.id = o.user_id
+
+          where   o.status = 'closed'
+        SQL
+      end
+    end
+
+    context "with INSERT without column list" do
+      let(:value) { "INSERT INTO users VALUES (1, 'Alice', 'alice@example.com')" }
+
+      it "formats without a column list" do
+        expect(output).to eq(<<~SQL)
+          insert into Users
+          values  (1, 'Alice', 'alice@example.com')
+        SQL
+      end
+    end
+
+    context "with INSERT...RETURNING" do
+      let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id, name" }
+
+      it "formats with the RETURNING clause" do
+        expect(output).to eq(<<~SQL)
+          insert into Users (
+              id,
+              name
+          )
+          values  (1, 'Alice')
+          returning id, name
+        SQL
+      end
+    end
+
+    context "with INSERT...ON CONFLICT DO NOTHING" do
+      let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO NOTHING" }
+
+      it "formats with the ON CONFLICT clause" do
+        expect(output).to eq(<<~SQL)
+          insert into Users (
+              id,
+              name
+          )
+          values  (1, 'Alice')
+          on conflict (id) do nothing
+        SQL
+      end
+    end
+
+    context "with INSERT...ON CONFLICT DO UPDATE SET...RETURNING" do
+      let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO UPDATE SET name = excluded.name RETURNING id" }
+
+      it "formats with ON CONFLICT, SET, and RETURNING" do
+        expect(output).to eq(<<~SQL)
+          insert into Users (
+              id,
+              name
+          )
+          values  (1, 'Alice')
+          on conflict (id) do update set name = excluded.name
+          returning id
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## UPDATE Integration
+    ############################################################################
+
+    context "with a simple UPDATE...SET...WHERE" do
+      let(:value) { "UPDATE users SET name = 'Alice', email = 'alice@example.com' WHERE id = 1" }
+
+      it "formats with keyword alignment" do
+        expect(output).to eq(<<~SQL)
+          update  Users
+          set     name = 'Alice',
+                  email = 'alice@example.com'
+          where   id = 1
+        SQL
+      end
+    end
+
+    context "with UPDATE...SET...FROM...WHERE" do
+      let(:value) { "UPDATE users SET name = accounts.name FROM accounts WHERE users.account_id = accounts.id" }
+
+      it "formats with FROM clause" do
+        expect(output).to eq(<<~SQL)
+          update  Users
+          set     name = accounts.name
+          from    accounts
+          where   users.account_id = accounts.id
+        SQL
+      end
+    end
+
+    context "with UPDATE...RETURNING" do
+      let(:value) { "UPDATE users SET active = true WHERE id = 1 RETURNING id, active" }
+
+      it "formats with RETURNING clause" do
+        expect(output).to eq(<<~SQL)
+          update  Users
+          set     active = true
+          where   id = 1
+          returning id, active
+        SQL
+      end
+    end
+
+    context "with UPDATE with multiple WHERE conditions" do
+      let(:value) { "UPDATE users SET active = false WHERE role = 'guest' AND last_login < '2024-01-01' AND verified = false" }
+
+      it "formats WHERE conditions on separate lines" do
+        expect(output).to eq(<<~SQL)
+          update  Users
+          set     active = false
+          where   role = 'guest'
+                  and last_login < '2024-01-01'
+                  and verified = false
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## DELETE Integration
+    ############################################################################
+
+    context "with a simple DELETE FROM...WHERE" do
+      let(:value) { "DELETE FROM users WHERE status = 'inactive'" }
+
+      it "formats with keyword alignment" do
+        expect(output).to eq(<<~SQL)
+          delete
+          from    Users
+          where   status = 'inactive'
+        SQL
+      end
+    end
+
+    context "with DELETE FROM without WHERE" do
+      let(:value) { "DELETE FROM temp_users" }
+
+      it "formats without WHERE" do
+        expect(output).to eq(<<~SQL)
+          delete
+          from    Temp_Users
+        SQL
+      end
+    end
+
+    context "with DELETE...USING...WHERE" do
+      let(:value) { "DELETE FROM users USING accounts WHERE users.account_id = accounts.id AND accounts.expired = true" }
+
+      it "formats with USING and WHERE clauses" do
+        expect(output).to eq(<<~SQL)
+          delete
+          from    Users
+          using   accounts
+          where   users.account_id = accounts.id
+                  and accounts.expired = true
+        SQL
+      end
+    end
+
+    context "with DELETE...RETURNING" do
+      let(:value) { "DELETE FROM users WHERE id = 1 RETURNING id, name" }
+
+      it "formats with RETURNING clause" do
+        expect(output).to eq(<<~SQL)
+          delete
+          from    Users
+          where   id = 1
+          returning id, name
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## DML Regression Safety
+    ############################################################################
+
+    context "with a malformed INSERT (no INTO)" do
+      let(:value) { "INSERT something somewhere" }
+
+      it "falls through to normalize-only path" do
+        expect(output).to eq(<<~SQL)
+          insert something somewhere
+        SQL
+      end
+    end
+
+    context "with a malformed DELETE (no FROM)" do
+      let(:value) { "DELETE something WHERE id = 1" }
+
+      it "falls through to normalize-only path" do
+        expect(output).to eq(<<~SQL)
+          delete something where id = 1
+        SQL
+      end
+    end
+
+    context "with existing SELECT queries after DML additions" do
+      let(:value) { "SELECT id, name FROM users WHERE active = true ORDER BY name LIMIT 10" }
+
+      it "still formats SELECT queries correctly" do
+        expect(output).to eq(<<~SQL)
+          select  id,
+                  name
+
+          from    Users u
+
+          where   active = true
+
+          order by name
+
+          limit 10
+        SQL
+      end
+    end
   end
 end

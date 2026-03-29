@@ -227,6 +227,135 @@ order by created_at desc
 limit 25;
 ```
 
+### INSERT
+
+`INSERT INTO ... VALUES` statements format with an indented column list and aligned value rows:
+
+```ruby
+SqlBeautifier.call(<<~SQL)
+  INSERT INTO users (id, name, email)
+  VALUES (1, 'Alice', 'alice@example.com'),
+         (2, 'Bob', 'bob@example.com')
+SQL
+```
+
+Produces:
+
+```sql
+insert into Users (
+    id,
+    name,
+    email
+)
+values  (1, 'Alice', 'alice@example.com'),
+        (2, 'Bob', 'bob@example.com');
+```
+
+`INSERT INTO ... SELECT` delegates the SELECT portion to the full formatter pipeline:
+
+```ruby
+SqlBeautifier.call("INSERT INTO users (id, name) SELECT id, name FROM temp_users WHERE active = true")
+```
+
+Produces:
+
+```sql
+insert into Users (
+    id,
+    name
+)
+
+select  id,
+        name
+
+from    Temp_Users tu
+
+where   active = true;
+```
+
+PostgreSQL `ON CONFLICT` and `RETURNING` clauses are supported:
+
+```ruby
+SqlBeautifier.call("INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO NOTHING RETURNING id")
+```
+
+Produces:
+
+```sql
+insert into Users (
+    id,
+    name
+)
+values  (1, 'Alice')
+on conflict (id) do nothing
+returning id;
+```
+
+### UPDATE
+
+`UPDATE ... SET` formats with aligned assignments and optional `FROM` and `WHERE` clauses:
+
+```ruby
+SqlBeautifier.call("UPDATE users SET name = 'Alice', email = 'alice@example.com' WHERE id = 1")
+```
+
+Produces:
+
+```sql
+update  Users
+set     name = 'Alice',
+        email = 'alice@example.com'
+where   id = 1;
+```
+
+PostgreSQL join-style `UPDATE ... FROM ... WHERE` is supported:
+
+```ruby
+SqlBeautifier.call("UPDATE users SET name = accounts.name FROM accounts WHERE users.account_id = accounts.id")
+```
+
+Produces:
+
+```sql
+update  Users
+set     name = accounts.name
+from    accounts
+where   users.account_id = accounts.id;
+```
+
+### DELETE
+
+`DELETE FROM` formats with standard clause layout:
+
+```ruby
+SqlBeautifier.call("DELETE FROM users WHERE status = 'inactive' AND last_login < '2024-01-01'")
+```
+
+Produces:
+
+```sql
+delete
+from    Users
+where   status = 'inactive'
+        and last_login < '2024-01-01';
+```
+
+PostgreSQL `USING` and `RETURNING` clauses are supported:
+
+```ruby
+SqlBeautifier.call("DELETE FROM users USING accounts WHERE users.account_id = accounts.id RETURNING users.id")
+```
+
+Produces:
+
+```sql
+delete
+from    Users
+using   accounts
+where   users.account_id = accounts.id
+returning users.id;
+```
+
 ### Set Operators (UNION, INTERSECT, EXCEPT)
 
 Compound queries joined by set operators are detected and each segment is formatted independently. The operator keyword appears on its own line with blank-line separation:

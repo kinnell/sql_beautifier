@@ -150,6 +150,111 @@ RSpec.describe "README examples" do
     end
   end
 
+  context "INSERT INTO...VALUES with multi-row" do
+    let(:value) { "INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'alice@example.com'), (2, 'Bob', 'bob@example.com')" }
+
+    it "formats with indented column list and aligned value rows" do
+      expect(output).to eq(<<~SQL)
+        insert into Users (
+            id,
+            name,
+            email
+        )
+        values  (1, 'Alice', 'alice@example.com'),
+                (2, 'Bob', 'bob@example.com');
+      SQL
+    end
+  end
+
+  context "INSERT INTO...SELECT" do
+    let(:value) { "INSERT INTO users (id, name) SELECT id, name FROM temp_users WHERE active = true" }
+
+    it "formats the INSERT and delegates the SELECT" do
+      expect(output).to eq(<<~SQL)
+        insert into Users (
+            id,
+            name
+        )
+
+        select  id,
+                name
+
+        from    Temp_Users tu
+
+        where   active = true;
+      SQL
+    end
+  end
+
+  context "INSERT...ON CONFLICT...RETURNING" do
+    let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO NOTHING RETURNING id" }
+
+    it "formats with on conflict and returning clauses" do
+      expect(output).to eq(<<~SQL)
+        insert into Users (
+            id,
+            name
+        )
+        values  (1, 'Alice')
+        on conflict (id) do nothing
+        returning id;
+      SQL
+    end
+  end
+
+  context "UPDATE...SET...WHERE" do
+    let(:value) { "UPDATE users SET name = 'Alice', email = 'alice@example.com' WHERE id = 1" }
+
+    it "formats with aligned assignments" do
+      expect(output).to eq(<<~SQL)
+        update  Users
+        set     name = 'Alice',
+                email = 'alice@example.com'
+        where   id = 1;
+      SQL
+    end
+  end
+
+  context "UPDATE...FROM...WHERE" do
+    let(:value) { "UPDATE users SET name = accounts.name FROM accounts WHERE users.account_id = accounts.id" }
+
+    it "formats with FROM clause" do
+      expect(output).to eq(<<~SQL)
+        update  Users
+        set     name = accounts.name
+        from    accounts
+        where   users.account_id = accounts.id;
+      SQL
+    end
+  end
+
+  context "DELETE FROM...WHERE with multiple conditions" do
+    let(:value) { "DELETE FROM users WHERE status = 'inactive' AND last_login < '2024-01-01'" }
+
+    it "formats with keyword alignment" do
+      expect(output).to eq(<<~SQL)
+        delete
+        from    Users
+        where   status = 'inactive'
+                and last_login < '2024-01-01';
+      SQL
+    end
+  end
+
+  context "DELETE...USING...RETURNING" do
+    let(:value) { "DELETE FROM users USING accounts WHERE users.account_id = accounts.id RETURNING users.id" }
+
+    it "formats with using, where, and returning clauses" do
+      expect(output).to eq(<<~SQL)
+        delete
+        from    Users
+        using   accounts
+        where   users.account_id = accounts.id
+        returning users.id;
+      SQL
+    end
+  end
+
   context "set operators with UNION ALL" do
     let(:value) { "SELECT id, name FROM users WHERE active = true UNION ALL SELECT id, name FROM admins WHERE role = 'super'" }
 

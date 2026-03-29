@@ -32,6 +32,15 @@ module SqlBeautifier
       compound_result = CompoundQuery.parse(@normalized_value, depth: @depth)&.render
       return prepend_sentinels(compound_result) if compound_result
 
+      insert_result = InsertQuery.parse(@normalized_value, depth: @depth)&.render
+      return prepend_sentinels(insert_result) if insert_result
+
+      update_result = UpdateQuery.parse(@normalized_value, depth: @depth)&.render
+      return prepend_sentinels(update_result) if update_result
+
+      delete_result = DeleteQuery.parse(@normalized_value, depth: @depth)&.render
+      return prepend_sentinels(delete_result) if delete_result
+
       first_clause_position = Tokenizer.first_clause_position(@normalized_value)
       return prepend_sentinels("#{@normalized_value}\n") if first_clause_position.nil? || first_clause_position.positive?
 
