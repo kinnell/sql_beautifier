@@ -23,11 +23,17 @@ module SqlBeautifier
       @leading_sentinels = extract_leading_sentinels!
       return unless @normalized_value.present?
 
+      drop_table_result = DropTable.parse(@normalized_value)&.render
+      return prepend_sentinels(drop_table_result) if drop_table_result
+
       cte_result = CteQuery.parse(@normalized_value, depth: @depth)&.render
       return prepend_sentinels(cte_result) if cte_result
 
       create_table_as_result = CreateTableAs.parse(@normalized_value, depth: @depth)&.render
       return prepend_sentinels(create_table_as_result) if create_table_as_result
+
+      create_table_result = CreateTable.parse(@normalized_value)&.render
+      return prepend_sentinels(create_table_result) if create_table_result
 
       compound_result = CompoundQuery.parse(@normalized_value, depth: @depth)&.render
       return prepend_sentinels(compound_result) if compound_result

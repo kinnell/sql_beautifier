@@ -137,6 +137,51 @@ RSpec.describe "README examples" do
     end
   end
 
+  context "searched CASE in SELECT" do
+    let(:value) { "SELECT id, CASE WHEN status = 'active' THEN 'Active' WHEN status = 'pending' THEN 'Pending' ELSE 'Unknown' END AS status_label, name FROM users" }
+
+    it "formats with expanded indentation" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  id,
+                case
+                    when status = 'active' then 'Active'
+                    when status = 'pending' then 'Pending'
+                    else 'Unknown'
+                end as status_label,
+                name
+
+        from    Users u;
+      SQL
+    end
+  end
+
+  context "simple CASE with operand" do
+    let(:value) { "SELECT CASE u.role WHEN 'admin' THEN 'Administrator' WHEN 'user' THEN 'Standard User' ELSE 'Guest' END AS role_label FROM users" }
+
+    it "places the operand on the case line" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  case u.role
+                    when 'admin' then 'Administrator'
+                    when 'user' then 'Standard User'
+                    else 'Guest'
+                end as role_label
+
+        from    Users u;
+      SQL
+    end
+  end
+
+  context "CASE inside parenthesized function call" do
+    let(:value) { "SELECT COALESCE(CASE WHEN x > 0 THEN x ELSE NULL END, 0) AS safe_x FROM users" }
+
+    it "preserves the CASE inline" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  coalesce(case when x > 0 then x else null end, 0) as safe_x
+        from    Users u;
+      SQL
+    end
+  end
+
   context "LIMIT with compact spacing" do
     let(:value) { "SELECT id FROM users ORDER BY created_at DESC LIMIT 25" }
 
@@ -255,6 +300,26 @@ RSpec.describe "README examples" do
     end
   end
 
+  context "DROP TABLE IF EXISTS" do
+    let(:value) { "DROP TABLE IF EXISTS persons" }
+
+    it "formats with keyword casing and PascalCase table name" do
+      expect(output).to match_formatted_text(<<~SQL)
+        drop table if exists Persons;
+      SQL
+    end
+  end
+
+  context "CREATE TEMPORARY TABLE with column definitions" do
+    let(:value) { "CREATE TEMPORARY TABLE persons (id bigint)" }
+
+    it "formats with keyword casing and PascalCase table name" do
+      expect(output).to match_formatted_text(<<~SQL)
+        create temporary table Persons (id bigint);
+      SQL
+    end
+  end
+
   context "set operators with UNION ALL" do
     let(:value) { "SELECT id, name FROM users WHERE active = true UNION ALL SELECT id, name FROM admins WHERE role = 'super'" }
 
@@ -338,6 +403,21 @@ RSpec.describe "README examples" do
                     from    Orders o
                     where   total > 100
                 );
+      SQL
+    end
+  end
+
+  context "derived table in FROM" do
+    let(:value) { "SELECT active_users.id FROM (SELECT id FROM users WHERE active = true) AS active_users" }
+
+    it "formats the derived table with indentation and preserves the alias" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  active_users.id
+        from    (
+                    select  id
+                    from    Users u
+                    where   active = true
+                ) active_users;
       SQL
     end
   end

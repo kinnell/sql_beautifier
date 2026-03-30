@@ -84,6 +84,23 @@ RSpec.describe SqlBeautifier do
       end
     end
 
+    context "with DROP TABLE, CREATE TABLE, and INSERT INTO as multiple statements" do
+      let(:value) { "drop table if exists temp_export_constituents; create temporary table temp_export_constituents (id bigint); insert into temp_export_constituents (id) select id from users" }
+
+      it "formats each statement independently" do
+        expect(output).to match_formatted_text(<<~SQL)
+          drop table if exists Temp_Export_Constituents;
+
+          create temporary table Temp_Export_Constituents (id bigint);
+
+          insert into Temp_Export_Constituents (id)
+
+          select  id
+          from    Users u;
+        SQL
+      end
+    end
+
     context "with trailing_semicolon disabled and multiple statements" do
       let(:value) { "SELECT id FROM constituents; SELECT id FROM departments" }
 

@@ -2,12 +2,7 @@
 
 module SqlBeautifier
   class CreateTableAs < Base
-    MODIFIERS = %w[
-      temp
-      temporary
-      unlogged
-      local
-    ].freeze
+    extend CreateTableParsing
 
     WITH_DATA_SUFFIX_REGEX = %r{\s+(with\s+(?:no\s+)?data)\s*\z}i
 
@@ -45,27 +40,6 @@ module SqlBeautifier
       return nil unless body_sql
 
       new(modifier: modifier, if_not_exists: if_not_exists, table_name: table_name, body_sql: body_sql, suffix: suffix, depth: depth)
-    end
-
-    def self.detect_modifier(scanner)
-      MODIFIERS.detect { |modifier| scanner.keyword_at?(modifier) }
-    end
-
-    def self.detect_if_not_exists?(scanner)
-      return false unless scanner.keyword_at?("if")
-
-      probe = Scanner.new(scanner.source, position: scanner.position)
-      probe.skip_past_keyword!("if")
-      return false unless probe.keyword_at?("not")
-
-      probe.skip_past_keyword!("not")
-      probe.keyword_at?("exists")
-    end
-
-    def self.skip_past_if_not_exists!(scanner)
-      scanner.skip_past_keyword!("if")
-      scanner.skip_past_keyword!("not")
-      scanner.skip_past_keyword!("exists")
     end
 
     def self.extract_body(sql, position)

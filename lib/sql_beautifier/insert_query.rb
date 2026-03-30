@@ -199,8 +199,9 @@ module SqlBeautifier
 
     def render_column_list
       columns = Tokenizer.split_by_top_level_commas(@column_list)
-      indent = Util.whitespace(SqlBeautifier.config_for(:indent_spaces) || 4)
+      return " (#{columns.first.strip})" if columns.length == 1
 
+      indent = Util.whitespace(SqlBeautifier.config_for(:indent_spaces) || 4)
       formatted_columns = columns.map { |column| "#{indent}#{column.strip}" }.join(",\n")
 
       " (\n#{formatted_columns}\n)"

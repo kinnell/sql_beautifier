@@ -42,6 +42,13 @@ module SqlBeautifier
     CLOSE_PARENTHESIS = ")"
     COMMA = ","
 
+    TABLE_MODIFIERS = %w[
+      temp
+      temporary
+      unlogged
+      local
+    ].freeze
+
     LATERAL_PREFIX_PATTERN = %r{\Alateral\s+}i
 
     WHITESPACE_REGEX = %r{\s+}
