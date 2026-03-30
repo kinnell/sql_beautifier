@@ -348,7 +348,9 @@ RSpec.describe SqlBeautifier::Condition do
       let(:text) { "active = true" }
 
       it "returns the raw text" do
-        expect(output).to eq("active = true")
+        expect(output).to match_formatted_text(<<~SQL)
+          active = true
+        SQL
       end
     end
 

@@ -498,6 +498,71 @@ RSpec.describe SqlBeautifier::Formatter do
       end
     end
 
+    context "with a derived table in the FROM clause" do
+      let(:value) { "SELECT active_users.id FROM (SELECT id FROM users WHERE active = true) AS active_users" }
+
+      it "formats the derived table as a subquery" do
+        expect(output).to include("from    (")
+        expect(output).to include("select  id")
+        expect(output).to include("from    Users u")
+        expect(output).to include("where   active = true")
+        expect(output).to include(") active_users")
+      end
+    end
+
+    context "with an aliasless derived table in the FROM clause" do
+      let(:value) { "SELECT id FROM (SELECT id FROM users)" }
+
+      it "formats the derived table without raising an error" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id
+          from    (
+          ············select  id
+          ············from    Users u
+          ········)
+
+        SQL
+      end
+    end
+
+    context "with NOT EXISTS containing a derived table" do
+      let(:value) { "SELECT users.id FROM users WHERE NOT EXISTS (SELECT 1 FROM (SELECT DISTINCT users.id AS id FROM users INNER JOIN orders ON orders.user_id = users.id WHERE orders.status = 'active') AS matched WHERE matched.id = users.id)" }
+
+      it "formats the NOT EXISTS subquery" do
+        expect(output).to include("where   not exists (")
+      end
+
+      it "formats the inner SELECT" do
+        expect(output).to include("select  1")
+      end
+
+      it "preserves the derived table structure" do
+        expect(output).to include(") matched")
+      end
+
+      it "formats the derived table content" do
+        expect(output).to include("select  distinct")
+      end
+
+      it "formats the inner WHERE condition" do
+        expect(output).to include("where   matched.id =")
+      end
+    end
+
+    context "with a regular table joined to a derived table" do
+      let(:value) { "SELECT users.name, stats.order_count FROM users INNER JOIN (SELECT user_id, count(*) AS order_count FROM orders GROUP BY user_id) AS stats ON stats.user_id = users.id" }
+
+      it "formats the outer table normally" do
+        expect(output).to include("from    Users u")
+      end
+
+      it "formats the derived table join as a subquery" do
+        expect(output).to include("inner join (")
+        expect(output).to include("select  user_id")
+        expect(output).to include(") stats on")
+      end
+    end
+
     ############################################################################
     ## CTE Integration
     ############################################################################

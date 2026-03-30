@@ -2,6 +2,12 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Fix derived tables (subqueries in `FROM` clauses) losing their content during formatting — `TableRegistry#parse_references` used a regex split that did not respect parenthesis depth, causing JOIN keywords inside derived table subqueries to be treated as top-level boundaries
+- Add derived table support to `TableReference` — segments starting with `(` are parsed as derived tables, preserving the full expression and extracting the alias from text after the closing `)`
+- Extract `find_all_top_level_join_positions` and `find_earliest_top_level_join_keyword` into `Tokenizer` for shared use by `Clauses::From` and `TableRegistry`
+- Improve subquery indentation for `FROM`-line subqueries — derived tables now align with keyword column width, matching the existing behavior for `WHERE`-line subqueries
+- Fix aliasless derived tables in `FROM` clauses raising `NoMethodError` or receiving malformed auto-generated aliases — lookup now falls back to the full derived-table expression when no alias is present and alias assignment skips aliasless derived tables
+
 ## [0.9.1] - 2026-03-29
 
 ## [0.9.0] - 2026-03-29

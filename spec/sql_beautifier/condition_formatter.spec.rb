@@ -23,7 +23,9 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "active = true" }
 
     it "returns the condition as-is" do
-      expect(output).to eq("active = true")
+      expect(output).to match_formatted_text(<<~SQL)
+        active = true
+      SQL
     end
   end
 

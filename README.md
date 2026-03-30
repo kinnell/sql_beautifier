@@ -469,6 +469,23 @@ where   id in (
 
 Nested subqueries increase indentation at each level.
 
+Derived tables (subqueries in `FROM` clauses) are also supported — the subquery content is recursively formatted and the alias is preserved:
+
+```ruby
+SqlBeautifier.call("SELECT active_users.id FROM (SELECT id FROM users WHERE active = true) AS active_users")
+```
+
+Produces:
+
+```sql
+select  active_users.id
+from    (
+            select  id
+            from    Users u
+            where   active = true
+        ) active_users;
+```
+
 ### Trailing Semicolons
 
 By default, each formatted statement ends with a `;`:

@@ -173,6 +173,41 @@ module SqlBeautifier
       scanner.top_level?
     end
 
+    def find_all_top_level_join_positions(text)
+      positions = []
+      search_offset = 0
+
+      while search_offset < text.length
+        earliest_match = find_earliest_top_level_join_keyword(text, search_offset)
+        break unless earliest_match
+
+        positions << earliest_match
+        search_offset = earliest_match[:position] + earliest_match[:keyword].length
+      end
+
+      positions
+    end
+
+    def find_earliest_top_level_join_keyword(text, search_offset)
+      earliest_match = nil
+
+      Constants::JOIN_KEYWORDS_BY_LENGTH.each do |keyword|
+        remaining_text = text[search_offset..]
+        keyword_position = find_top_level_keyword(remaining_text, keyword)
+        next unless keyword_position
+
+        absolute_position = search_offset + keyword_position
+        next if earliest_match && absolute_position >= earliest_match[:position]
+
+        earliest_match = {
+          position: absolute_position,
+          keyword: keyword,
+        }
+      end
+
+      earliest_match
+    end
+
     def scan_top_level_conjunctions(text)
       scanner = Scanner.new(text)
       conjunction_boundaries = []

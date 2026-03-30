@@ -79,6 +79,11 @@ module SqlBeautifier
           next
         end
 
+        if reference.derived_table?
+          @references_by_name[reference.name] = reference
+          next
+        end
+
         initials = table_initials(reference.name)
         duplicate_initials_counts[initials] += 1 if initials_occurrence_counts[initials] > 1
 
@@ -109,7 +114,7 @@ module SqlBeautifier
       occurrence_counts = Hash.new(0)
 
       @references.each do |reference|
-        next if reference.explicit_alias
+        next if reference.explicit_alias || reference.derived_table?
 
         occurrence_counts[table_initials(reference.name)] += 1
       end
@@ -136,16 +141,26 @@ module SqlBeautifier
     end
 
     def parse_references(from_content)
-      split_segments = from_content.strip.split(Constants::JOIN_KEYWORD_PATTERN)
+      from_text = from_content.strip
+      join_positions = Tokenizer.find_all_top_level_join_positions(from_text)
 
       references = []
 
-      primary_segment = split_segments.shift.strip
+      primary_end = join_positions.any? ? join_positions.first[:position] : from_text.length
+      primary_segment = from_text[0...primary_end].strip
       references << TableReference.parse(primary_segment)
 
-      split_segments.each_slice(2) do |_join_keyword, join_content|
-        next unless join_content
+      join_positions.each_with_index do |join_info, index|
+        content_start = join_info[:position] + join_info[:keyword].length
+        content_end = begin
+          if index + 1 < join_positions.length
+            join_positions[index + 1][:position]
+          else
+            from_text.length
+          end
+        end
 
+        join_content = from_text[content_start...content_end].strip
         references << TableReference.parse(join_content)
       end
 

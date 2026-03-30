@@ -1,21 +1,41 @@
 # frozen_string_literal: true
 
-RSpec::Matchers.define :match_formatted_text do |expected_text|
+RSpec::Matchers.define :match_formatted_text do |expected|
+  define_method(:expectation) do
+    expected.chomp.tr("·", " ")
+  end
+
   match do |actual|
-    actual == expected_text.chomp.tr("·", " ")
+    actual == expectation
   end
 
   failure_message do |actual|
-    "expected #{actual.inspect} to match #{expected_text.inspect}"
+    <<~TEXT
+      EXPECTED:
+      #{expectation.inspect}
+
+      ACTUAL:
+      #{actual.inspect}
+    TEXT
   end
 end
 
-RSpec::Matchers.define :include_formatted_text do |expected_text|
+RSpec::Matchers.define :include_formatted_text do |expected|
+  define_method(:expectation) do
+    expected.chomp.tr("·", " ")
+  end
+
   match do |actual|
-    actual.include?(expected_text.chomp.tr("·", " "))
+    actual.include?(expectation)
   end
 
   failure_message do |actual|
-    "expected #{actual.inspect} to include #{expected_text.inspect}"
+    <<~TEXT
+      EXPECTED:
+      #{expectation.inspect}
+
+      ACTUAL:
+      #{actual.inspect}
+    TEXT
   end
 end

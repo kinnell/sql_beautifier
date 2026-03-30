@@ -56,6 +56,15 @@ RSpec.describe SqlBeautifier::Join do
         expect(join).to be_nil
       end
     end
+
+    context "with a table not found in the registry" do
+      let(:from_content) { "users" }
+      let(:join) { described_class.parse("inner join unknown_table on unknown_table.id = users.id", table_registry: table_registry) }
+
+      it "returns nil" do
+        expect(join).to be_nil
+      end
+    end
   end
 
   describe "#render" do
@@ -89,7 +98,9 @@ RSpec.describe SqlBeautifier::Join do
       let(:output) { join.render(continuation_indent: "        ", condition_indent: "            ") }
 
       it "renders without ON clause" do
-        expect(output).to eq("        cross join Roles r")
+        expect(output).to match_formatted_text(<<~SQL)
+          ········cross join Roles r
+        SQL
       end
     end
 
