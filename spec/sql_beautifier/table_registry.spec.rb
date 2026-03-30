@@ -183,7 +183,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "users.id = orders.user_id" }
 
       it "replaces table_name. with alias." do
-        expect(output).to eq("u.id = o.user_id")
+        expect(output).to match_formatted_text(<<~SQL)
+          u.id = o.user_id
+        SQL
       end
     end
 
@@ -191,7 +193,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "active = true" }
 
       it "does not modify the text" do
-        expect(output).to eq("active = true")
+        expect(output).to match_formatted_text(<<~SQL)
+          active = true
+        SQL
       end
     end
 
@@ -199,7 +203,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "users.first_name, users.last_name, orders.total" }
 
       it "replaces all occurrences" do
-        expect(output).to eq("u.first_name, u.last_name, o.total")
+        expect(output).to match_formatted_text(<<~SQL)
+          u.first_name, u.last_name, o.total
+        SQL
       end
     end
 
@@ -208,7 +214,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "user_sessions.user_id = users.id" }
 
       it "replaces the longer name correctly without partial matches" do
-        expect(output).to eq("us.user_id = u.id")
+        expect(output).to match_formatted_text(<<~SQL)
+          us.user_id = u.id
+        SQL
       end
     end
 
@@ -216,7 +224,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "users.id = 1 and message = 'users.id'" }
 
       it "does not replace inside the string literal" do
-        expect(output).to eq("u.id = 1 and message = 'users.id'")
+        expect(output).to match_formatted_text(<<~SQL)
+          u.id = 1 and message = 'users.id'
+        SQL
       end
     end
 
@@ -224,7 +234,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "users.id = 1 and name = 'users.o''brien'" }
 
       it "preserves the escaped quote and does not replace inside the literal" do
-        expect(output).to eq("u.id = 1 and name = 'users.o''brien'")
+        expect(output).to match_formatted_text(<<~SQL)
+          u.id = 1 and name = 'users.o''brien'
+        SQL
       end
     end
 
@@ -232,7 +244,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { 'users.id = 1 and "users.name" = 2' }
 
       it "does not replace inside the quoted identifier" do
-        expect(output).to eq('u.id = 1 and "users.name" = 2')
+        expect(output).to match_formatted_text(<<~SQL)
+          u.id = 1 and "users.name" = 2
+        SQL
       end
     end
 
@@ -240,7 +254,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "archived_users.id = users.id" }
 
       it "does not replace the suffix match" do
-        expect(output).to eq("archived_users.id = u.id")
+        expect(output).to match_formatted_text(<<~SQL)
+          archived_users.id = u.id
+        SQL
       end
     end
 
@@ -249,7 +265,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "updates.id = uploads.update_id" }
 
       it "replaces with counter-based aliases" do
-        expect(output).to eq("u1.id = u2.update_id")
+        expect(output).to match_formatted_text(<<~SQL)
+          u1.id = u2.update_id
+        SQL
       end
     end
 
@@ -258,7 +276,9 @@ RSpec.describe SqlBeautifier::TableRegistry do
       let(:value) { "users.id = orders.user_id and usr.active = true" }
 
       it "replaces table references with explicit aliases" do
-        expect(output).to eq("usr.id = o.user_id and usr.active = true")
+        expect(output).to match_formatted_text(<<~SQL)
+          usr.id = o.user_id and usr.active = true
+        SQL
       end
     end
   end

@@ -8,7 +8,9 @@ RSpec.describe SqlBeautifier::Clauses::GroupBy do
       let(:value) { "status" }
 
       it "formats with keyword" do
-        expect(output).to eq("group by status")
+        expect(output).to match_formatted_text(<<~SQL)
+          group by status
+        SQL
       end
     end
 
@@ -16,7 +18,9 @@ RSpec.describe SqlBeautifier::Clauses::GroupBy do
       let(:value) { "status, department" }
 
       it "keeps columns inline" do
-        expect(output).to eq("group by status, department")
+        expect(output).to match_formatted_text(<<~SQL)
+          group by status, department
+        SQL
       end
     end
 
@@ -24,7 +28,9 @@ RSpec.describe SqlBeautifier::Clauses::GroupBy do
       let(:value) { "date_trunc('month', created_at), status" }
 
       it "keeps the function expression intact" do
-        expect(output).to eq("group by date_trunc('month', created_at), status")
+        expect(output).to match_formatted_text(<<~SQL)
+          group by date_trunc('month', created_at), status
+        SQL
       end
     end
 
@@ -32,7 +38,9 @@ RSpec.describe SqlBeautifier::Clauses::GroupBy do
       let(:value) { "year, quarter, department" }
 
       it "keeps all columns inline" do
-        expect(output).to eq("group by year, quarter, department")
+        expect(output).to match_formatted_text(<<~SQL)
+          group by year, quarter, department
+        SQL
       end
     end
 
@@ -40,7 +48,9 @@ RSpec.describe SqlBeautifier::Clauses::GroupBy do
       let(:value) { "  status , department  " }
 
       it "strips surrounding whitespace" do
-        expect(output).to eq("group by status , department")
+        expect(output).to match_formatted_text(<<~SQL)
+          group by status , department
+        SQL
       end
     end
   end

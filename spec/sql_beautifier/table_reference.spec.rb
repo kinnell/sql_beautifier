@@ -61,6 +61,74 @@ RSpec.describe SqlBeautifier::TableReference do
         expect(reference).to be_nil
       end
     end
+
+    ############################################################################
+    ## Derived Tables
+    ############################################################################
+
+    context "with a derived table using AS alias" do
+      let(:reference) { described_class.parse("(select id from users) as subq") }
+
+      it "extracts the alias as the name" do
+        expect(reference.name).to eq("subq")
+      end
+
+      it "stores the explicit alias" do
+        expect(reference.explicit_alias).to eq("subq")
+      end
+
+      it "stores the derived table expression" do
+        expect(reference.derived_table_expression).to eq("(select id from users)")
+      end
+
+      it "identifies as a derived table" do
+        expect(reference).to be_derived_table
+      end
+    end
+
+    context "with a derived table using bare alias" do
+      let(:reference) { described_class.parse("(select id from users) subq") }
+
+      it "extracts the alias as the name" do
+        expect(reference.name).to eq("subq")
+      end
+
+      it "stores the explicit alias" do
+        expect(reference.explicit_alias).to eq("subq")
+      end
+
+      it "identifies as a derived table" do
+        expect(reference).to be_derived_table
+      end
+    end
+
+    context "with a derived table containing joins" do
+      let(:reference) { described_class.parse("(select id from users inner join orders on orders.user_id = users.id) as subq") }
+
+      it "preserves the full expression including joins" do
+        expect(reference.derived_table_expression).to eq("(select id from users inner join orders on orders.user_id = users.id)")
+      end
+
+      it "extracts the alias" do
+        expect(reference.explicit_alias).to eq("subq")
+      end
+    end
+
+    context "with a derived table without alias" do
+      let(:reference) { described_class.parse("(select id from users)") }
+
+      it "stores the expression as the name" do
+        expect(reference.name).to eq("(select id from users)")
+      end
+
+      it "has no explicit alias" do
+        expect(reference.explicit_alias).to be_nil
+      end
+
+      it "identifies as a derived table" do
+        expect(reference).to be_derived_table
+      end
+    end
   end
 
   describe "#formatted_name" do
@@ -135,6 +203,22 @@ RSpec.describe SqlBeautifier::TableReference do
 
       it "PascalCases the table name" do
         expect(reference.render).to eq("User_Roles ur")
+      end
+    end
+
+    context "with a derived table expression and alias" do
+      let(:reference) { described_class.new(name: "subq", explicit_alias: "subq", derived_table_expression: "(select id from users)") }
+
+      it "renders the raw expression with alias" do
+        expect(reference.render).to eq("(select id from users) subq")
+      end
+    end
+
+    context "with a derived table expression without alias" do
+      let(:reference) { described_class.new(name: "(select id from users)", derived_table_expression: "(select id from users)") }
+
+      it "renders just the raw expression" do
+        expect(reference.render).to eq("(select id from users)")
       end
     end
   end

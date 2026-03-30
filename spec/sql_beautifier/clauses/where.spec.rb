@@ -8,7 +8,9 @@ RSpec.describe SqlBeautifier::Clauses::Where do
       let(:value) { "active = true" }
 
       it "formats with keyword prefix" do
-        expect(output).to eq("where   active = true")
+        expect(output).to match_formatted_text(<<~SQL)
+          where   active = true
+        SQL
       end
     end
 
@@ -117,7 +119,9 @@ RSpec.describe SqlBeautifier::Clauses::Where do
       let(:value) { "id in (select user_id from orders)" }
 
       it "keeps the subquery intact" do
-        expect(output).to eq("where   id in (select user_id from orders)")
+        expect(output).to match_formatted_text(<<~SQL)
+          where   id in (select user_id from orders)
+        SQL
       end
     end
 
@@ -136,7 +140,9 @@ RSpec.describe SqlBeautifier::Clauses::Where do
       let(:value) { "created_at between '2024-01-01' and '2024-12-31'" }
 
       it "keeps the BETWEEN...AND expression intact" do
-        expect(output).to eq("where   created_at between '2024-01-01' and '2024-12-31'")
+        expect(output).to match_formatted_text(<<~SQL)
+          where   created_at between '2024-01-01' and '2024-12-31'
+        SQL
       end
     end
 
@@ -199,7 +205,9 @@ RSpec.describe SqlBeautifier::Clauses::Where do
       let(:value) { "exists (select 1 from orders where orders.user_id = users.id)" }
 
       it "keeps the subquery intact" do
-        expect(output).to eq("where   exists (select 1 from orders where orders.user_id = users.id)")
+        expect(output).to match_formatted_text(<<~SQL)
+          where   exists (select 1 from orders where orders.user_id = users.id)
+        SQL
       end
     end
 

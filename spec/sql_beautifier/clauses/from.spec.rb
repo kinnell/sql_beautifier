@@ -9,7 +9,9 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users" }
 
       it "formats with PascalCase and alias" do
-        expect(output).to eq("from    Users u")
+        expect(output).to match_formatted_text(<<~SQL)
+          from    Users u
+        SQL
       end
     end
 
@@ -17,7 +19,9 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "active_storage_blobs" }
 
       it "formats with PascalCase and initials alias" do
-        expect(output).to eq("from    Active_Storage_Blobs asb")
+        expect(output).to match_formatted_text(<<~SQL)
+          from    Active_Storage_Blobs asb
+        SQL
       end
     end
 
@@ -25,7 +29,9 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "  users  " }
 
       it "strips whitespace" do
-        expect(output).to eq("from    Users u")
+        expect(output).to match_formatted_text(<<~SQL)
+          from    Users u
+        SQL
       end
     end
 
@@ -33,7 +39,9 @@ RSpec.describe SqlBeautifier::Clauses::From do
       let(:value) { "users usr" }
 
       it "preserves the explicit alias" do
-        expect(output).to eq("from    Users usr")
+        expect(output).to match_formatted_text(<<~SQL)
+          from    Users usr
+        SQL
       end
     end
 
@@ -182,6 +190,46 @@ RSpec.describe SqlBeautifier::Clauses::From do
                   inner join Orders o on orders.user_id = users.id
                       and orders.status = 'active'
                       and orders.total > 0
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## Derived Tables
+    ############################################################################
+
+    context "with a derived table as the primary table" do
+      let(:value) { "(select id from users where active = true) as active_users" }
+
+      it "preserves the derived table expression with its alias" do
+        expect(output).to match_formatted_text(<<~SQL)
+          from    (select id from users where active = true) active_users
+        SQL
+      end
+    end
+
+    context "with a derived table containing joins" do
+      let(:value) { "(select users.id from users inner join orders on orders.user_id = users.id) as user_orders" }
+
+      it "preserves the full derived table expression" do
+        expect(output).to match_formatted_text(<<~SQL)
+          from    (select users.id from users inner join orders on orders.user_id = users.id) user_orders
+        SQL
+      end
+    end
+
+    context "with a regular table joined to a derived table" do
+      let(:value) { "users inner join (select user_id, count(*) as order_count from orders group by user_id) as order_stats on order_stats.user_id = users.id" }
+
+      it "formats the primary table normally" do
+        expect(output).to include_formatted_text(<<~SQL)
+          from    Users u
+        SQL
+      end
+
+      it "preserves the derived table in the join" do
+        expect(output).to include_formatted_text(<<~SQL)
+          inner join (select user_id, count(*) as order_count from orders group by user_id) order_stats on order_stats.user_id = users.id
         SQL
       end
     end

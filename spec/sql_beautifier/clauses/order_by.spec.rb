@@ -8,7 +8,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "name" }
 
       it "formats with keyword" do
-        expect(output).to eq("order by name")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by name
+        SQL
       end
     end
 
@@ -16,7 +18,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "created_at desc" }
 
       it "preserves sort direction" do
-        expect(output).to eq("order by created_at desc")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by created_at desc
+        SQL
       end
     end
 
@@ -24,7 +28,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "name asc" }
 
       it "preserves sort direction" do
-        expect(output).to eq("order by name asc")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by name asc
+        SQL
       end
     end
 
@@ -32,7 +38,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "department, name asc, created_at desc" }
 
       it "keeps all columns inline" do
-        expect(output).to eq("order by department, name asc, created_at desc")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by department, name asc, created_at desc
+        SQL
       end
     end
 
@@ -40,7 +48,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "name asc nulls first" }
 
       it "preserves the nulls ordering" do
-        expect(output).to eq("order by name asc nulls first")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by name asc nulls first
+        SQL
       end
     end
 
@@ -48,7 +58,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "created_at desc nulls last" }
 
       it "preserves the nulls ordering" do
-        expect(output).to eq("order by created_at desc nulls last")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by created_at desc nulls last
+        SQL
       end
     end
 
@@ -56,7 +68,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "  name asc  " }
 
       it "strips surrounding whitespace" do
-        expect(output).to eq("order by name asc")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by name asc
+        SQL
       end
     end
 
@@ -64,7 +78,9 @@ RSpec.describe SqlBeautifier::Clauses::OrderBy do
       let(:value) { "lower(name) asc" }
 
       it "keeps the function expression intact" do
-        expect(output).to eq("order by lower(name) asc")
+        expect(output).to match_formatted_text(<<~SQL)
+          order by lower(name) asc
+        SQL
       end
     end
   end

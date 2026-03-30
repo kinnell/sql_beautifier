@@ -8,7 +8,9 @@ RSpec.describe SqlBeautifier::Clauses::Having do
       let(:value) { "count(*) > 5" }
 
       it "formats with keyword prefix" do
-        expect(output).to eq("having  count(*) > 5")
+        expect(output).to match_formatted_text(<<~SQL)
+          having  count(*) > 5
+        SQL
       end
     end
 

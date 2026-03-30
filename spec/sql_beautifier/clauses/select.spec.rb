@@ -8,7 +8,9 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id" }
 
       it "formats on one line" do
-        expect(output).to eq("select  id")
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id
+        SQL
       end
     end
 
@@ -16,7 +18,9 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "*" }
 
       it "formats on one line" do
-        expect(output).to eq("select  *")
+        expect(output).to match_formatted_text(<<~SQL)
+          select  *
+        SQL
       end
     end
 
@@ -95,7 +99,9 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct_count" }
 
       it "does not treat the column as a DISTINCT prefix" do
-        expect(output).to eq("select  distinct_count")
+        expect(output).to match_formatted_text(<<~SQL)
+          select  distinct_count
+        SQL
       end
     end
 

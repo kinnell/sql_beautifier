@@ -22,11 +22,13 @@ module SqlBeautifier
         conditions = []
       end
 
-      table_name = Util.first_word(table_text)
-      table_ref = table_registry.reference_for(table_name)
+      table_lookup_name = TableReference.derived_table_lookup_name_from(table_text) || Util.first_word(table_text)
+      table_reference = table_registry.reference_for(table_lookup_name)
+      return unless table_reference
+
       trailing_sentinels = extract_trailing_sentinels(table_text)
 
-      new(keyword: keyword, table_reference: table_ref, trailing_sentinels: trailing_sentinels, conditions: conditions)
+      new(keyword: keyword, table_reference: table_reference, trailing_sentinels: trailing_sentinels, conditions: conditions)
     end
 
     def self.extract_keyword(join_text)
