@@ -55,14 +55,15 @@ RSpec.describe "inline_group_threshold configuration" do
       end
     end
 
-    context "with a single parenthesized group as the only condition" do
+    context "with redundant outer parentheses around multiple conditions" do
       let(:value) { "SELECT id FROM users WHERE (active = true AND verified = true)" }
 
-      it "keeps it as a single top-level condition" do
+      it "strips the outer parentheses and formats each condition" do
         expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
-          where   (active = true and verified = true);
+          where   active = true
+                  and verified = true;
         SQL
       end
     end

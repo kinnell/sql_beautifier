@@ -9,6 +9,7 @@ module SqlBeautifier
       @alias_strategy = SqlBeautifier.config_for(:alias_strategy)
       @references = []
       @references_by_name = {}
+
       build!
     end
 

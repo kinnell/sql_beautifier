@@ -42,6 +42,8 @@ module SqlBeautifier
     CLOSE_PARENTHESIS = ")"
     COMMA = ","
 
+    LATERAL_PREFIX_PATTERN = %r{\Alateral\s+}i
+
     WHITESPACE_REGEX = %r{\s+}
     WHITESPACE_CHARACTER_REGEX = %r{\s}
     SINGLE_QUOTE = "'"

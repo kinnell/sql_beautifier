@@ -65,6 +65,56 @@ RSpec.describe SqlBeautifier::Join do
         expect(join).to be_nil
       end
     end
+
+    ############################################################################
+    ## LATERAL Joins
+    ############################################################################
+
+    context "with an inner join lateral" do
+      let(:from_content) { "users inner join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id" }
+      let(:join) { described_class.parse("inner join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id", table_registry: table_registry) }
+
+      it "extracts the keyword" do
+        expect(join.keyword).to eq("inner join")
+      end
+
+      it "extracts the table reference" do
+        expect(join.table_reference.name).to eq("recent_orders")
+      end
+
+      it "marks the join as lateral" do
+        expect(join.lateral).to be true
+      end
+
+      it "extracts one condition" do
+        expect(join.conditions.length).to eq(1)
+      end
+    end
+
+    context "with a left join lateral" do
+      let(:from_content) { "users left join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id" }
+      let(:join) { described_class.parse("left join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id", table_registry: table_registry) }
+
+      it "extracts the keyword" do
+        expect(join.keyword).to eq("left join")
+      end
+
+      it "extracts the table reference" do
+        expect(join.table_reference.name).to eq("recent_orders")
+      end
+
+      it "marks the join as lateral" do
+        expect(join.lateral).to be true
+      end
+    end
+
+    context "with a non-lateral join" do
+      let(:join) { described_class.parse("inner join orders on orders.user_id = users.id", table_registry: table_registry) }
+
+      it "does not mark the join as lateral" do
+        expect(join.lateral).to be false
+      end
+    end
   end
 
   describe "#render" do
@@ -101,6 +151,16 @@ RSpec.describe SqlBeautifier::Join do
         expect(output).to match_formatted_text(<<~SQL.chomp)
           ········cross join Roles r
         SQL
+      end
+    end
+
+    context "with a lateral join and single condition" do
+      let(:from_content) { "users inner join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id" }
+      let(:join) { described_class.parse("inner join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id", table_registry: table_registry) }
+      let(:output) { join.render(continuation_indent: "        ", condition_indent: "            ") }
+
+      it "includes lateral between the keyword and the table" do
+        expect(output).to include("inner join lateral (select id from orders) recent_orders on")
       end
     end
 

@@ -3,6 +3,7 @@
 module SqlBeautifier
   class Join < Base
     option :keyword
+    option :lateral, default: -> { false }
     option :table_reference
     option :trailing_sentinels, default: -> {}
     option :conditions, default: -> { [] }
@@ -10,6 +11,8 @@ module SqlBeautifier
     def self.parse(join_text, table_registry:)
       keyword, remaining_content = extract_keyword(join_text)
       return unless keyword && remaining_content
+
+      remaining_content, lateral = TableReference.strip_lateral_prefix(remaining_content)
 
       on_keyword_position = Tokenizer.find_top_level_keyword(remaining_content, "on")
 
@@ -28,7 +31,7 @@ module SqlBeautifier
 
       trailing_sentinels = extract_trailing_sentinels(table_text)
 
-      new(keyword: keyword, table_reference: table_reference, trailing_sentinels: trailing_sentinels, conditions: conditions)
+      new(keyword: keyword, lateral: lateral, table_reference: table_reference, trailing_sentinels: trailing_sentinels, conditions: conditions)
     end
 
     def self.extract_keyword(join_text)
@@ -52,17 +55,18 @@ module SqlBeautifier
 
     def render(continuation_indent:, condition_indent:)
       rendered_table = @table_reference.render(trailing_sentinels: @trailing_sentinels)
+      lateral_prefix = @lateral ? "lateral " : ""
       lines = []
 
       if @conditions.any?
         first_condition = @conditions.first[1]
-        lines << "#{continuation_indent}#{@keyword} #{rendered_table} on #{first_condition}"
+        lines << "#{continuation_indent}#{@keyword} #{lateral_prefix}#{rendered_table} on #{first_condition}"
 
         @conditions.drop(1).each do |conjunction, condition|
           lines << "#{condition_indent}#{conjunction} #{condition}"
         end
       else
-        lines << "#{continuation_indent}#{@keyword} #{rendered_table}"
+        lines << "#{continuation_indent}#{@keyword} #{lateral_prefix}#{rendered_table}"
       end
 
       lines.join("\n")

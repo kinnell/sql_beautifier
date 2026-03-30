@@ -121,6 +121,15 @@ RSpec.describe SqlBeautifier::TableRegistry do
         expect(output).to eq("usr")
       end
     end
+
+    context "with a lateral derived table in a join" do
+      let(:from_clause) { "users inner join lateral (select id from orders) as recent_orders on recent_orders.user_id = users.id" }
+      let(:table_name) { "recent_orders" }
+
+      it "returns the explicit alias for the lateral derived table" do
+        expect(output).to eq("recent_orders")
+      end
+    end
   end
 
   ############################################################################

@@ -2,7 +2,13 @@
 
 module SqlBeautifier
   class CreateTableAs < Base
-    MODIFIERS = %w[temp temporary unlogged local].freeze
+    MODIFIERS = %w[
+      temp
+      temporary
+      unlogged
+      local
+    ].freeze
+
     WITH_DATA_SUFFIX_REGEX = %r{\s+(with\s+(?:no\s+)?data)\s*\z}i
 
     option :modifier, default: -> {}

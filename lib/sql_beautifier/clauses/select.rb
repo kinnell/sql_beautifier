@@ -21,8 +21,11 @@ module SqlBeautifier
       private
 
       def parse_expressions(value)
+        keyword_width = SqlBeautifier.config_for(:keyword_column_width)
+
         Tokenizer.split_by_top_level_commas(value).map do |column|
-          Expression.parse(column)
+          formatted_column = CaseExpression.format_in_text(column, base_indent: keyword_width)
+          Expression.parse(formatted_column)
         end
       end
 

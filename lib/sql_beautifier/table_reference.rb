@@ -9,7 +9,7 @@ module SqlBeautifier
 
     def self.parse(segment_text)
       table_specification = table_specification_text(segment_text)
-      stripped_specification = table_specification.strip
+      stripped_specification, _lateral = strip_lateral_prefix(table_specification.strip)
 
       return parse_derived_table(stripped_specification) if stripped_specification.start_with?(Constants::OPEN_PARENTHESIS)
 
@@ -52,8 +52,18 @@ module SqlBeautifier
       end
     end
 
+    def self.strip_lateral_prefix(text)
+      stripped = text.strip
+
+      if stripped.match?(Constants::LATERAL_PREFIX_PATTERN)
+        [stripped.sub(Constants::LATERAL_PREFIX_PATTERN, ""), true]
+      else
+        [stripped, false]
+      end
+    end
+
     def self.derived_table_lookup_name_from(text)
-      stripped_text = text.strip
+      stripped_text, _lateral = strip_lateral_prefix(text.strip)
       return unless stripped_text.start_with?(Constants::OPEN_PARENTHESIS)
 
       closing_position = Scanner.new(stripped_text).find_matching_parenthesis(0)

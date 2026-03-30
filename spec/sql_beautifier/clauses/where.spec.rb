@@ -61,6 +61,37 @@ RSpec.describe SqlBeautifier::Clauses::Where do
       end
     end
 
+    context "with a set of parentheses around a single condition" do
+      let(:value) { "(active = true)" }
+
+      it "formats without the parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   active = true
+        SQL
+      end
+    end
+
+    context "with multiple sets of parentheses around a single condition" do
+      let(:value) { "((active = true))" }
+
+      it "formats without the parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   active = true
+        SQL
+      end
+    end
+
+    context "with a set of parentheses around multiple conditions" do
+      let(:value) { "((active = true) and (role = 'admin'))" }
+
+      it "formats without the parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   active = true
+                  and role = 'admin'
+        SQL
+      end
+    end
+
     context "with a parenthesized group" do
       let(:value) { "active = true and (role = 'admin' or role = 'moderator')" }
 
@@ -230,6 +261,44 @@ RSpec.describe SqlBeautifier::Clauses::Where do
           where   email is not null
                   and verified_at is not null
                   and active = true
+        SQL
+      end
+    end
+
+    context "with a CASE expression containing AND in its WHEN condition" do
+      let(:value) { "case when a = 1 and b = 2 then 'x' else 'y' end = 'x'" }
+
+      it "does not split on the AND inside the CASE" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   case
+                      when a = 1 and b = 2 then 'x'
+                      else 'y'
+                  end = 'x'
+        SQL
+      end
+    end
+
+    context "with a CASE expression containing AND alongside a top-level AND" do
+      let(:value) { "case when a = 1 and b = 2 then true else false end = true and active = true" }
+
+      it "splits only on the top-level AND" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   case
+                      when a = 1 and b = 2 then true
+                      else false
+                  end = true
+                  and active = true
+        SQL
+      end
+    end
+
+    context "with case_-prefixed and end_-prefixed column names" do
+      let(:value) { "case_id = 1 and end_date > '2026-01-01'" }
+
+      it "does not misidentify case_id or end_date as CASE/END keywords" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   case_id = 1
+                  and end_date > '2026-01-01'
         SQL
       end
     end

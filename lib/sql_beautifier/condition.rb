@@ -8,7 +8,7 @@ module SqlBeautifier
 
     def self.format(text, indent_width: 0)
       conditions = parse_all(text)
-      return text.strip if conditions.length <= 1 && conditions.first&.leaf?
+      return conditions.first.expression if conditions.length <= 1 && conditions.first&.leaf?
 
       render_all(conditions, indent_width: indent_width)
     end

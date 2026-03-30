@@ -212,6 +212,7 @@ module SqlBeautifier
       scanner = Scanner.new(text)
       conjunction_boundaries = []
       inside_between = false
+      case_depth = 0
 
       until scanner.finished?
         next if scanner.skip_quoted_or_sentinel!
@@ -229,22 +230,36 @@ module SqlBeautifier
           scanner.advance!
         else
           if scanner.parenthesis_depth.zero?
-            inside_between = true if scanner.keyword_at?(Constants::BETWEEN_KEYWORD)
-
-            matched_conjunction = scanner.detect_conjunction_at
-
-            if matched_conjunction
-              if matched_conjunction == "and" && inside_between
-                inside_between = false
-              else
-                conjunction_boundaries << {
-                  conjunction: matched_conjunction,
-                  position: scanner.position,
-                }
-              end
-
-              scanner.advance!(matched_conjunction.length)
+            if scanner.keyword_at?("case")
+              case_depth += 1
+              scanner.advance!("case".length)
               next
+            end
+
+            if scanner.keyword_at?("end") && case_depth.positive?
+              case_depth -= 1
+              scanner.advance!("end".length)
+              next
+            end
+
+            if case_depth.zero?
+              inside_between = true if scanner.keyword_at?(Constants::BETWEEN_KEYWORD)
+
+              matched_conjunction = scanner.detect_conjunction_at
+
+              if matched_conjunction
+                if matched_conjunction == "and" && inside_between
+                  inside_between = false
+                else
+                  conjunction_boundaries << {
+                    conjunction: matched_conjunction,
+                    position: scanner.position,
+                  }
+                end
+
+                scanner.advance!(matched_conjunction.length)
+                next
+              end
             end
           end
 
