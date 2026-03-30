@@ -2,6 +2,9 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add `IN` list multiline formatting — `WHERE x IN (1, 2, 3)` value lists with 2+ items are now expanded to one item per line with proper indentation; single-item lists and `IN (SELECT ...)` subqueries are left unchanged
+- Fix redundant parentheses after `NOT` not being stripped — `NOT ((a = 1 OR b = 2))` is now reduced to `NOT (a = 1 OR b = 2)`, removing unnecessary doubled parentheses while preserving semantically required grouping
+
 ## [0.10.3] - 2026-03-30
 
 - Add `DROP TABLE` formatting — `DROP TABLE [IF EXISTS] table_name` statements are now recognized and rendered with proper keyword casing and PascalCase table names instead of passing through as normalized text

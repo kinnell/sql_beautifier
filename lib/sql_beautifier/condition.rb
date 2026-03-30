@@ -2,6 +2,8 @@
 
 module SqlBeautifier
   class Condition < Base
+    NOT_PREFIX_PATTERN = %r{\Anot([[:space:]]+)}i
+
     option :conjunction, default: -> {}
     option :expression, default: -> {}
     option :children, default: -> {}
@@ -52,7 +54,7 @@ module SqlBeautifier
     end
 
     def render(indent_width:)
-      return @expression if leaf?
+      return InList.format_in_text(@expression, base_indent: indent_width) if leaf?
 
       inline_version = render_inline
       return inline_version if inline_version.length <= SqlBeautifier.config_for(:inline_group_threshold)
@@ -89,7 +91,28 @@ module SqlBeautifier
         output = inner_content
       end
 
-      output
+      unwrap_not_prefix_parens(output)
+    end
+
+    def self.unwrap_not_prefix_parens(text)
+      prefix_match = text.match(NOT_PREFIX_PATTERN)
+      return text unless prefix_match
+
+      remainder = text[prefix_match[0].length..]
+
+      unwrapped_remainder = remainder
+
+      while Tokenizer.outer_parentheses_wrap_all?(unwrapped_remainder)
+        inner_content = Util.strip_outer_parentheses(unwrapped_remainder)
+        inner_conditions = Tokenizer.split_top_level_conditions(inner_content)
+        break if inner_conditions.length > 1
+
+        unwrapped_remainder = inner_content
+      end
+
+      return text if unwrapped_remainder == remainder
+
+      "not #{unwrapped_remainder}"
     end
 
     def self.parse_condition_group(condition_text)

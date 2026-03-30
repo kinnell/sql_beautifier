@@ -109,6 +109,46 @@ RSpec.describe SqlBeautifier::Condition do
     end
 
     ############################################################################
+    ## NOT prefix paren unwrapping
+    ############################################################################
+
+    context "with NOT and doubly-wrapped parentheses around a group" do
+      let(:text) { "not ((a = 1 or b = 2)) and c = 3" }
+
+      it "unwraps the redundant outer parens after NOT" do
+        expect(conditions[0].expression).to eq("not (a = 1 or b = 2)")
+      end
+
+      it "preserves the second condition" do
+        expect(conditions[1].expression).to eq("c = 3")
+      end
+    end
+
+    context "with NOT and single-wrapped parentheses around a single condition" do
+      let(:text) { "not (a = 1) and b = 2" }
+
+      it "unwraps the redundant parens after NOT" do
+        expect(conditions[0].expression).to eq("not a = 1")
+      end
+    end
+
+    context "with NOT and triply-wrapped parentheses around a group" do
+      let(:text) { "not (((a = 1 or b = 2))) and c = 3" }
+
+      it "unwraps down to a single layer" do
+        expect(conditions[0].expression).to eq("not (a = 1 or b = 2)")
+      end
+    end
+
+    context "with NOT and necessary parentheses around a group" do
+      let(:text) { "not (a = 1 or b = 2) and c = 3" }
+
+      it "preserves the necessary parentheses" do
+        expect(conditions[0].expression).to eq("not (a = 1 or b = 2)")
+      end
+    end
+
+    ############################################################################
     ## Flattening
     ############################################################################
 

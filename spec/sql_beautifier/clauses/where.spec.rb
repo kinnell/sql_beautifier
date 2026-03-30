@@ -159,9 +159,12 @@ RSpec.describe SqlBeautifier::Clauses::Where do
     context "with an IN list alongside another condition" do
       let(:value) { "status in ('active', 'pending') and role = 'admin'" }
 
-      it "keeps the IN list intact" do
+      it "expands the IN list to multiple lines" do
         expect(output).to match_formatted_text(<<~SQL.chomp)
-          where   status in ('active', 'pending')
+          where   status in (
+                      'active',
+                      'pending'
+                  )
                   and role = 'admin'
         SQL
       end
@@ -245,9 +248,12 @@ RSpec.describe SqlBeautifier::Clauses::Where do
     context "with NOT IN" do
       let(:value) { "status not in ('deleted', 'banned') and active = true" }
 
-      it "keeps the NOT IN expression intact" do
+      it "expands the NOT IN list to multiple lines" do
         expect(output).to match_formatted_text(<<~SQL.chomp)
-          where   status not in ('deleted', 'banned')
+          where   status not in (
+                      'deleted',
+                      'banned'
+                  )
                   and active = true
         SQL
       end
@@ -299,6 +305,77 @@ RSpec.describe SqlBeautifier::Clauses::Where do
         expect(output).to match_formatted_text(<<~SQL.chomp)
           where   case_id = 1
                   and end_date > '2026-01-01'
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## IN list formatting
+    ############################################################################
+
+    context "with a single-condition IN list of multiple items" do
+      let(:value) { "x in (1, 2, 3)" }
+
+      it "expands the IN list to multiple lines" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   x in (
+                      1,
+                      2,
+                      3
+                  )
+        SQL
+      end
+    end
+
+    context "with a single-item IN list" do
+      let(:value) { "x in (1)" }
+
+      it "keeps the IN list inline" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   x in (1)
+        SQL
+      end
+    end
+
+    context "with multiple IN lists across conditions" do
+      let(:value) { "x in (1, 2) and y not in (3, 4, 5)" }
+
+      it "expands both IN lists to multiple lines" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   x in (
+                      1,
+                      2
+                  )
+                  and y not in (
+                      3,
+                      4,
+                      5
+                  )
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## NOT prefix paren unwrapping
+    ############################################################################
+
+    context "with NOT and doubly-wrapped parentheses around a group" do
+      let(:value) { "not ((a = 1 or b = 2))" }
+
+      it "removes the redundant outer parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   not (a = 1 or b = 2)
+        SQL
+      end
+    end
+
+    context "with NOT and doubly-wrapped parentheses alongside another condition" do
+      let(:value) { "not ((a = 1 or b = 2)) and c = 3" }
+
+      it "removes the redundant outer parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          where   not (a = 1 or b = 2)
+                  and c = 3
         SQL
       end
     end

@@ -1796,5 +1796,72 @@ RSpec.describe SqlBeautifier::Formatter do
         SQL
       end
     end
+
+    ############################################################################
+    ## IN list formatting
+    ############################################################################
+
+    context "with SELECT and a WHERE IN list" do
+      let(:value) { "SELECT id FROM users WHERE status IN ('active', 'pending', 'banned')" }
+
+      it "expands the IN list to multiple lines" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id
+          from    Users u
+          where   status in (
+                      'active',
+                      'pending',
+                      'banned'
+                  )
+        SQL
+      end
+    end
+
+    context "with UPDATE and a WHERE IN list" do
+      let(:value) { "UPDATE users SET active = false WHERE role IN ('guest', 'visitor')" }
+
+      it "expands the IN list to multiple lines" do
+        expect(output).to match_formatted_text(<<~SQL)
+          update  Users
+          set     active = false
+          where   role in (
+                      'guest',
+                      'visitor'
+                  )
+        SQL
+      end
+    end
+
+    context "with DELETE and a WHERE IN list" do
+      let(:value) { "DELETE FROM users WHERE id IN (1, 2, 3)" }
+
+      it "expands the IN list to multiple lines" do
+        expect(output).to match_formatted_text(<<~SQL)
+          delete
+          from    Users
+          where   id in (
+                      1,
+                      2,
+                      3
+                  )
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## NOT prefix paren unwrapping
+    ############################################################################
+
+    context "with NOT and redundant double parentheses in WHERE" do
+      let(:value) { "SELECT id FROM users WHERE NOT ((active = true OR role = 'admin'))" }
+
+      it "removes the redundant outer parentheses" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id
+          from    Users u
+          where   not (active = true or role = 'admin')
+        SQL
+      end
+    end
   end
 end
