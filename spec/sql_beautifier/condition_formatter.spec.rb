@@ -259,4 +259,26 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
       SQL
     end
   end
+
+  context "with NOT and doubly-wrapped parentheses around a group" do
+    let(:value) { "not ((a = 1 or b = 2)) and c = 3" }
+
+    it "unwraps the redundant parens and formats conditions" do
+      expect(output).to match_formatted_text(<<~SQL.chomp)
+        ········not (a = 1 or b = 2)
+        ········and c = 3
+      SQL
+    end
+  end
+
+  context "with NOT and redundant parens around a single condition" do
+    let(:value) { "not (a = 1) and b = 2" }
+
+    it "unwraps the redundant parens" do
+      expect(output).to match_formatted_text(<<~SQL.chomp)
+        ········not a = 1
+        ········and b = 2
+      SQL
+    end
+  end
 end

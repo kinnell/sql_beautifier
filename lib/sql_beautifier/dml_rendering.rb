@@ -10,7 +10,8 @@ module SqlBeautifier
 
       formatted_where_text = begin
         if conditions.length <= 1 && conditions.first&.leaf?
-          "\n#{Util.keyword_padding('where')}#{@where_clause.strip}"
+          formatted_expression = InList.format_in_text(conditions.first.expression, base_indent: keyword_column_width)
+          "\n#{Util.keyword_padding('where')}#{formatted_expression}"
         else
           formatted_conditions = Condition.render_all(conditions, indent_width: keyword_column_width)
           "\n#{formatted_conditions.sub(Util.continuation_padding, Util.keyword_padding('where'))}"

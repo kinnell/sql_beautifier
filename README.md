@@ -188,6 +188,41 @@ where   active = true
         );
 ```
 
+`IN` value lists with multiple items are expanded to one item per line. Single-item lists and `IN (SELECT ...)` subqueries are left inline:
+
+```ruby
+SqlBeautifier.call("SELECT id FROM users WHERE status IN ('active', 'pending', 'banned')")
+```
+
+Produces:
+
+```sql
+select  id
+from    Users u
+where   status in (
+            'active',
+            'pending',
+            'banned'
+        );
+```
+
+Redundant parentheses are removed, including after `NOT`:
+
+```ruby
+SqlBeautifier.call("SELECT id FROM users WHERE NOT ((active = true OR role = 'guest')) AND verified = true")
+```
+
+Produces:
+
+```sql
+select  id
+
+from    Users u
+
+where   not (active = true or role = 'guest')
+        and verified = true;
+```
+
 ### GROUP BY and HAVING
 
 ```ruby

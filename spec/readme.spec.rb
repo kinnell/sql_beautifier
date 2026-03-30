@@ -120,6 +120,37 @@ RSpec.describe "README examples" do
     end
   end
 
+  context "WHERE with IN value list" do
+    let(:value) { "SELECT id FROM users WHERE status IN ('active', 'pending', 'banned')" }
+
+    it "expands the IN list to multiple lines" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  id
+        from    Users u
+        where   status in (
+                    'active',
+                    'pending',
+                    'banned'
+                );
+      SQL
+    end
+  end
+
+  context "WHERE with NOT and redundant double parentheses" do
+    let(:value) { "SELECT id FROM users WHERE NOT ((active = true OR role = 'guest')) AND verified = true" }
+
+    it "removes the redundant parentheses after NOT" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  id
+
+        from    Users u
+
+        where   not (active = true or role = 'guest')
+                and verified = true;
+      SQL
+    end
+  end
+
   context "GROUP BY and HAVING" do
     let(:value) { "SELECT status, count(*) FROM users GROUP BY status HAVING count(*) > 5" }
 
