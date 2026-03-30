@@ -239,4 +239,24 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
       SQL
     end
   end
+
+  context "with a single condition wrapped in parentheses" do
+    let(:value) { "(active = true)" }
+
+    it "unwraps the parentheses" do
+      expect(output).to match_formatted_text(<<~SQL.chomp)
+        active = true
+      SQL
+    end
+  end
+
+  context "with a single condition wrapped in multiple sets of parentheses" do
+    let(:value) { "((active = true))" }
+
+    it "unwraps all layers of parentheses" do
+      expect(output).to match_formatted_text(<<~SQL.chomp)
+        active = true
+      SQL
+    end
+  end
 end

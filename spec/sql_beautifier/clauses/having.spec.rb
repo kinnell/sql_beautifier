@@ -24,5 +24,36 @@ RSpec.describe SqlBeautifier::Clauses::Having do
         SQL
       end
     end
+
+    context "with a set of parentheses around a single condition" do
+      let(:value) { "(count(*) > 5)" }
+
+      it "formats without the parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          having  count(*) > 5
+        SQL
+      end
+    end
+
+    context "with multiple sets of parentheses around a single condition" do
+      let(:value) { "((count(*) > 5))" }
+
+      it "formats without the parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          having  count(*) > 5
+        SQL
+      end
+    end
+
+    context "with a set of parentheses around multiple conditions" do
+      let(:value) { "((count(*) > 5) and (sum(total) > 1000))" }
+
+      it "formats without the parentheses" do
+        expect(output).to match_formatted_text(<<~SQL.chomp)
+          having  count(*) > 5
+                  and sum(total) > 1000
+        SQL
+      end
+    end
   end
 end

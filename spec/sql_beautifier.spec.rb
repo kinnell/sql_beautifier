@@ -994,10 +994,14 @@ RSpec.describe SqlBeautifier do
     context "with a searched CASE in SELECT" do
       let(:value) { "SELECT id, CASE WHEN status = 1 THEN 'active' WHEN status = 2 THEN 'inactive' ELSE 'unknown' END AS label FROM users" }
 
-      it "preserves the CASE expression inline" do
+      it "formats the CASE expression with expanded indentation" do
         expect(output).to match_formatted_text(<<~SQL)
           select  id,
-                  case when status = 1 then 'active' when status = 2 then 'inactive' else 'unknown' end as label
+                  case
+                      when status = 1 then 'active'
+                      when status = 2 then 'inactive'
+                      else 'unknown'
+                  end as label
 
           from    Users u
         SQL
@@ -1007,9 +1011,13 @@ RSpec.describe SqlBeautifier do
     context "with a simple CASE in SELECT" do
       let(:value) { "SELECT CASE status WHEN 1 THEN 'active' ELSE 'unknown' END FROM users" }
 
-      it "preserves the CASE expression inline" do
+      it "formats the simple CASE expression with expanded indentation" do
         expect(output).to match_formatted_text(<<~SQL)
-          select  case status when 1 then 'active' else 'unknown' end
+          select  case status
+                      when 1 then 'active'
+                      else 'unknown'
+                  end
+
           from    Users u
         SQL
       end
@@ -1018,11 +1026,14 @@ RSpec.describe SqlBeautifier do
     context "with a CASE expression in WHERE" do
       let(:value) { "SELECT id FROM users WHERE CASE WHEN role = 'admin' THEN true ELSE false END = true" }
 
-      it "preserves the CASE expression in the WHERE clause" do
+      it "formats the CASE expression in the WHERE clause" do
         expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
-          where   case when role = 'admin' then true else false end = true
+          where   case
+                      when role = 'admin' then true
+                      else false
+                  end = true
         SQL
       end
     end

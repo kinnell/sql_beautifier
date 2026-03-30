@@ -386,6 +386,44 @@ RSpec.describe SqlBeautifier::Formatter do
     end
 
     ############################################################################
+    ## LATERAL Join Integration
+    ############################################################################
+
+    context "with an inner join lateral" do
+      let(:value) { "SELECT users.id, recent_orders.total FROM users INNER JOIN LATERAL (SELECT total FROM orders WHERE orders.user_id = users.id ORDER BY created_at DESC LIMIT 1) AS recent_orders ON true" }
+
+      it "formats the lateral join with the subquery" do
+        expect(output).to include("inner join lateral (")
+        expect(output).to include(") recent_orders on true")
+      end
+
+      it "formats the primary table normally" do
+        expect(output).to include("from    Users u")
+      end
+    end
+
+    context "with a left join lateral" do
+      let(:value) { "SELECT users.id, recent_orders.total FROM users LEFT JOIN LATERAL (SELECT total FROM orders WHERE orders.user_id = users.id LIMIT 1) AS recent_orders ON true" }
+
+      it "formats the lateral join with the subquery" do
+        expect(output).to include("left join lateral (")
+        expect(output).to include(") recent_orders on true")
+      end
+    end
+
+    context "with a lateral join alongside a regular join" do
+      let(:value) { "SELECT users.id, profiles.bio, recent_orders.total FROM users INNER JOIN profiles ON profiles.user_id = users.id LEFT JOIN LATERAL (SELECT total FROM orders WHERE orders.user_id = users.id LIMIT 1) AS recent_orders ON true" }
+
+      it "formats the regular join without lateral" do
+        expect(output).to include("inner join Profiles p on p.user_id = u.id")
+      end
+
+      it "formats the lateral join" do
+        expect(output).to include("left join lateral (")
+      end
+    end
+
+    ############################################################################
     ## Complex WHERE Integration
     ############################################################################
 
@@ -1390,6 +1428,200 @@ RSpec.describe SqlBeautifier::Formatter do
           order by name
 
           limit 10
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## CASE Expressions
+    ############################################################################
+
+    context "with a CASE expression in a SELECT column" do
+      let(:value) { "SELECT id, CASE WHEN u.status = 'active' THEN 'Active' WHEN u.status = 'pending' THEN 'Pending' ELSE 'Unknown' END AS status_label, name FROM users" }
+
+      it "formats the CASE expression with multiline indentation" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id,
+                  case
+                      when u.status = 'active' then 'Active'
+                      when u.status = 'pending' then 'Pending'
+                      else 'Unknown'
+                  end as status_label,
+                  name
+
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a CASE expression in a WHERE condition" do
+      let(:value) { "SELECT id FROM users WHERE CASE WHEN role = 'admin' THEN 1 ELSE 0 END = 1" }
+
+      it "formats the CASE expression in the WHERE clause" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id
+          from    Users u
+          where   case
+                      when role = 'admin' then 1
+                      else 0
+                  end = 1
+        SQL
+      end
+    end
+
+    context "with a CASE expression in a WHERE condition with multiple conditions" do
+      let(:value) { "SELECT id FROM users WHERE active = true AND CASE WHEN role = 'admin' THEN true ELSE false END = true" }
+
+      it "formats the CASE within the multi-condition WHERE" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id
+
+          from    Users u
+
+          where   active = true
+                  and case
+                      when role = 'admin' then true
+                      else false
+                  end = true
+        SQL
+      end
+    end
+
+    context "with multiple CASE expressions in the same SELECT" do
+      let(:value) { "SELECT CASE WHEN a = 1 THEN 'x' ELSE 'y' END AS col1, CASE WHEN b = 2 THEN 'p' ELSE 'q' END AS col2 FROM users" }
+
+      it "formats both CASE expressions" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  case
+                      when a = 1 then 'x'
+                      else 'y'
+                  end as col1,
+                  case
+                      when b = 2 then 'p'
+                      else 'q'
+                  end as col2
+
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a CASE expression with alias" do
+      let(:value) { "SELECT CASE WHEN x > 0 THEN 'positive' ELSE 'negative' END AS sign FROM users" }
+
+      it "preserves the alias after END" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  case
+                      when x > 0 then 'positive'
+                      else 'negative'
+                  end as sign
+
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a simple CASE expression (CASE expr WHEN value)" do
+      let(:value) { "SELECT CASE u.role WHEN 'admin' THEN 'Administrator' WHEN 'user' THEN 'Standard User' ELSE 'Guest' END AS role_label FROM users" }
+
+      it "formats the simple CASE with operand on the CASE line" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  case u.role
+                      when 'admin' then 'Administrator'
+                      when 'user' then 'Standard User'
+                      else 'Guest'
+                  end as role_label
+
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a nested CASE expression" do
+      let(:value) { "SELECT CASE WHEN x = 1 THEN CASE WHEN y = 1 THEN 'a' ELSE 'b' END WHEN x = 2 THEN 'c' END AS result FROM users" }
+
+      it "formats the outer and inner CASE expressions" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  case
+                      when x = 1 then case
+                          when y = 1 then 'a'
+                          else 'b'
+                      end
+                      when x = 2 then 'c'
+                  end as result
+
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a CASE expression inside a function call in SELECT" do
+      let(:value) { "SELECT COALESCE(CASE WHEN x > 0 THEN x ELSE NULL END, 0) AS safe_x FROM users" }
+
+      it "preserves the CASE inside the function call" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  coalesce(case when x > 0 then x else null end, 0) as safe_x
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a CASE expression in UPDATE SET" do
+      let(:value) { "UPDATE users SET status = CASE WHEN active = true THEN 'enabled' ELSE 'disabled' END WHERE id = 1" }
+
+      it "formats the CASE in the SET assignment" do
+        expect(output).to match_formatted_text(<<~SQL)
+          update  Users
+          set     status = case
+                      when active = true then 'enabled'
+                      else 'disabled'
+                  end
+          where   id = 1
+        SQL
+      end
+    end
+
+    context "with a CASE expression without ELSE" do
+      let(:value) { "SELECT CASE WHEN active = true THEN 'yes' END AS status FROM users" }
+
+      it "formats without an ELSE line" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  case
+                      when active = true then 'yes'
+                  end as status
+
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a query containing no CASE expressions" do
+      let(:value) { "SELECT id, name FROM users WHERE active = true" }
+
+      it "formats without any CASE-related changes" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  id,
+                  name
+
+          from    Users u
+
+          where   active = true
+        SQL
+      end
+    end
+
+    context "with case_-prefixed and end_-prefixed column names" do
+      let(:value) { "SELECT case_id, end_date FROM users WHERE case_id = 1 AND end_date > '2026-01-01'" }
+
+      it "does not misidentify case_id or end_date as CASE/END keywords" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  case_id,
+                  end_date
+
+          from    Users u
+
+          where   case_id = 1
+                  and end_date > '2026-01-01'
         SQL
       end
     end

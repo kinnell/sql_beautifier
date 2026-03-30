@@ -2,6 +2,18 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add CASE expression formatting — searched CASE (`CASE WHEN ... THEN ... ELSE ... END`) and simple CASE (`CASE expr WHEN value THEN ... END`) are detected and formatted with consistent indentation of `when`/`else`/`end` lines relative to the `case` keyword
+- Add CASE integration into SELECT columns, WHERE/HAVING conditions, and UPDATE SET assignments via `CaseExpression.format_in_text`
+- Add inline vs expanded rendering for CASE expressions controlled by the existing `inline_group_threshold` configuration — short CASE expressions remain on a single line when below the threshold
+- Add nested CASE support — inner CASE blocks within WHEN/THEN/ELSE values are recursively formatted with increased indentation
+- Add string-literal and sentinel safety — CASE keywords inside quoted strings, double-quoted identifiers, and comment sentinels are not mistakenly parsed
+- Preserve CASE expressions inside parenthesized function calls (e.g. `COALESCE(CASE ... END, 0)`) without top-level expansion
+- Fix `AND`/`OR` inside CASE expressions being misidentified as top-level conjunctions in WHERE/HAVING clauses — conjunction scanning now tracks CASE/END depth
+- Use `indent_spaces` configuration for CASE body indentation instead of a hard-coded value
+- Add `INNER JOIN LATERAL` and `LEFT JOIN LATERAL` support — `LATERAL` is recognized as a join modifier rather than a table name, preserving correct derived table parsing and alias resolution for lateral subqueries
+- Strip redundant outer parentheses from WHERE and HAVING clause bodies — `WHERE (active = true)`, `WHERE ((active = true))`, and `WHERE ((a = true) AND (b = true))` now correctly unwrap before formatting
+- Fix `Condition.format` early return for single leaf conditions to use the unwrapped expression instead of the original text
+
 ## [0.9.2] - 2026-03-30
 
 - Fix derived tables (subqueries in `FROM` clauses) losing their content during formatting — `TableRegistry#parse_references` used a regex split that did not respect parenthesis depth, causing JOIN keywords inside derived table subqueries to be treated as top-level boundaries

@@ -92,12 +92,15 @@ module SqlBeautifier
     def render_assignments
       items = Tokenizer.split_by_top_level_commas(@assignments)
       continuation = Util.continuation_padding
+      keyword_width = SqlBeautifier.config_for(:keyword_column_width)
 
       formatted_items = items.map.with_index do |item, index|
+        formatted_item = CaseExpression.format_in_text(item.strip, base_indent: keyword_width)
+
         if index.zero?
-          "\n#{Util.keyword_padding('set')}#{item.strip}"
+          "\n#{Util.keyword_padding('set')}#{formatted_item}"
         else
-          "\n#{continuation}#{item.strip}"
+          "\n#{continuation}#{formatted_item}"
         end
       end
 

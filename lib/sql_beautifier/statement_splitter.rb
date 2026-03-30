@@ -2,9 +2,28 @@
 
 module SqlBeautifier
   module StatementSplitter
-    STATEMENT_KEYWORDS = %w[select with create insert update delete].freeze
-    BOUNDARY_KEYWORDS = %w[from where having limit into set values].freeze
-    CONTINUATION_PAIRS = { "insert" => "select" }.freeze
+    STATEMENT_KEYWORDS = %w[
+      select
+      with
+      create
+      insert
+      update
+      delete
+    ].freeze
+
+    BOUNDARY_KEYWORDS = %w[
+      from
+      where
+      having
+      limit
+      into
+      set
+      values
+    ].freeze
+
+    CONTINUATION_PAIRS = {
+      "insert" => "select",
+    }.freeze
 
     module_function
 

@@ -111,7 +111,7 @@ where   u.active = true
 order by o.total desc;
 ```
 
-Supported join types: `inner join`, `left join`, `right join`, `full join`, `left outer join`, `right outer join`, `full outer join`, `cross join`.
+Supported join types: `inner join`, `left join`, `right join`, `full join`, `left outer join`, `right outer join`, `full outer join`, `cross join`. The `LATERAL` modifier is supported with `inner join lateral` and `left join lateral` for lateral subqueries.
 
 ### DISTINCT and DISTINCT ON
 
@@ -211,6 +211,61 @@ group by status
 
 having  count(*) > 5;
 ```
+
+### CASE Expressions
+
+Both searched (`CASE WHEN ... THEN ... END`) and simple (`CASE expr WHEN value THEN ... END`) forms are formatted with multiline indentation. Inner `when`/`else`/`end` lines are indented relative to the `case` keyword:
+
+```ruby
+SqlBeautifier.call("SELECT id, CASE WHEN status = 'active' THEN 'Active' WHEN status = 'pending' THEN 'Pending' ELSE 'Unknown' END AS status_label, name FROM users")
+```
+
+Produces:
+
+```sql
+select  id,
+        case
+            when status = 'active' then 'Active'
+            when status = 'pending' then 'Pending'
+            else 'Unknown'
+        end as status_label,
+        name
+
+from    Users u;
+```
+
+Simple CASE places the operand on the `case` line:
+
+```ruby
+SqlBeautifier.call("SELECT CASE u.role WHEN 'admin' THEN 'Administrator' WHEN 'user' THEN 'Standard User' ELSE 'Guest' END AS role_label FROM users")
+```
+
+Produces:
+
+```sql
+select  case u.role
+            when 'admin' then 'Administrator'
+            when 'user' then 'Standard User'
+            else 'Guest'
+        end as role_label
+
+from    Users u;
+```
+
+CASE expressions inside parenthesized function calls are preserved inline:
+
+```ruby
+SqlBeautifier.call("SELECT COALESCE(CASE WHEN x > 0 THEN x ELSE NULL END, 0) AS safe_x FROM users")
+```
+
+Produces:
+
+```sql
+select  coalesce(case when x > 0 then x else null end, 0) as safe_x
+from    Users u;
+```
+
+CASE expressions also work in WHERE/HAVING conditions and UPDATE SET assignments. Nested CASE blocks are recursively formatted with increased indentation. Short CASE expressions can remain inline when below the `inline_group_threshold`.
 
 ### LIMIT
 
@@ -616,9 +671,9 @@ Controls how table names are formatted in the output. Default: `:pascal_case`.
 
 #### `inline_group_threshold`
 
-Maximum character length for a parenthesized condition group to remain on a single line. Groups whose inline representation exceeds this length are expanded to multiple lines with indented conditions. Default: `0` (always expand).
+Maximum character length for a parenthesized condition group or CASE expression to remain on a single line. Groups and CASE expressions whose inline representation exceeds this length are expanded to multiple lines with indented contents. Default: `0` (always expand).
 
-Set to a positive integer to allow short groups to stay inline. For example, with a threshold of `80`, the group `(role = 'admin' or role = 'moderator')` would stay on one line since it's under 80 characters.
+Set to a positive integer to allow short groups and CASE expressions to stay inline. For example, with a threshold of `80`, the group `(role = 'admin' or role = 'moderator')` and a short CASE like `case when x = 1 then 'yes' else 'no' end` would stay on one line since they're under 80 characters.
 
 #### `trailing_semicolon`
 

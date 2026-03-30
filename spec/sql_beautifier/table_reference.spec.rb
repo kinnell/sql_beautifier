@@ -129,6 +129,103 @@ RSpec.describe SqlBeautifier::TableReference do
         expect(reference).to be_derived_table
       end
     end
+
+    ############################################################################
+    ## LATERAL Derived Tables
+    ############################################################################
+
+    context "with a lateral derived table using AS alias" do
+      let(:reference) { described_class.parse("lateral (select id from users) as subq") }
+
+      it "extracts the alias as the name" do
+        expect(reference.name).to eq("subq")
+      end
+
+      it "stores the explicit alias" do
+        expect(reference.explicit_alias).to eq("subq")
+      end
+
+      it "stores the derived table expression without lateral" do
+        expect(reference.derived_table_expression).to eq("(select id from users)")
+      end
+
+      it "identifies as a derived table" do
+        expect(reference).to be_derived_table
+      end
+    end
+
+    context "with a lateral derived table using bare alias" do
+      let(:reference) { described_class.parse("lateral (select id from users) subq") }
+
+      it "extracts the alias as the name" do
+        expect(reference.name).to eq("subq")
+      end
+
+      it "stores the explicit alias" do
+        expect(reference.explicit_alias).to eq("subq")
+      end
+
+      it "identifies as a derived table" do
+        expect(reference).to be_derived_table
+      end
+    end
+
+    context "with a lateral derived table and ON conditions" do
+      let(:reference) { described_class.parse("lateral (select id from orders) as recent on recent.user_id = users.id") }
+
+      it "extracts the alias as the name" do
+        expect(reference.name).to eq("recent")
+      end
+
+      it "identifies as a derived table" do
+        expect(reference).to be_derived_table
+      end
+    end
+  end
+
+  ############################################################################
+  ## .strip_lateral_prefix
+  ############################################################################
+
+  describe ".strip_lateral_prefix" do
+    context "with a lateral prefix" do
+      let(:text) { "lateral (select id from users)" }
+      let(:result) { described_class.strip_lateral_prefix(text) }
+
+      it "returns the text without the lateral prefix" do
+        expect(result[0]).to eq("(select id from users)")
+      end
+
+      it "returns true for the lateral flag" do
+        expect(result[1]).to be true
+      end
+    end
+
+    context "without a lateral prefix" do
+      let(:text) { "(select id from users)" }
+      let(:result) { described_class.strip_lateral_prefix(text) }
+
+      it "returns the text unchanged" do
+        expect(result[0]).to eq("(select id from users)")
+      end
+
+      it "returns false for the lateral flag" do
+        expect(result[1]).to be false
+      end
+    end
+
+    context "with leading whitespace before lateral" do
+      let(:text) { "  lateral (select id from users)" }
+      let(:result) { described_class.strip_lateral_prefix(text) }
+
+      it "strips whitespace and removes lateral" do
+        expect(result[0]).to eq("(select id from users)")
+      end
+
+      it "returns true for the lateral flag" do
+        expect(result[1]).to be true
+      end
+    end
   end
 
   describe "#formatted_name" do
