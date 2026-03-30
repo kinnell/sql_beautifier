@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.10.2] - 2026-03-30
+
 - Fix `INSERT INTO ... (columns) (SELECT ...)` not being recognized — `InsertQuery.parse_body` now unwraps parenthesized SELECT subqueries, supporting PostgreSQL's valid `INSERT INTO table (cols) (SELECT ...)` syntax
 
 ## [0.10.1] - 2026-03-30
