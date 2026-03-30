@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.9.1] - 2026-03-29
+
 ## [0.9.0] - 2026-03-29
 
 - Add DML statement formatting for `INSERT`, `UPDATE`, and `DELETE` — each statement type is routed to a dedicated entity class (`InsertQuery`, `UpdateQuery`, `DeleteQuery`) following the `Base` + `parse`/`render` pattern
