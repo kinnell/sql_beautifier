@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.9.2] - 2026-03-30
+
 - Fix derived tables (subqueries in `FROM` clauses) losing their content during formatting — `TableRegistry#parse_references` used a regex split that did not respect parenthesis depth, causing JOIN keywords inside derived table subqueries to be treated as top-level boundaries
 - Add derived table support to `TableReference` — segments starting with `(` are parsed as derived tables, preserving the full expression and extracting the alias from text after the closing `)`
 - Extract `find_all_top_level_join_positions` and `find_earliest_top_level_join_keyword` into `Tokenizer` for shared use by `Clauses::From` and `TableRegistry`
