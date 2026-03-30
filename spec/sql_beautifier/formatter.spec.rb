@@ -566,24 +566,55 @@ RSpec.describe SqlBeautifier::Formatter do
     context "with NOT EXISTS containing a derived table" do
       let(:value) { "SELECT users.id FROM users WHERE NOT EXISTS (SELECT 1 FROM (SELECT DISTINCT users.id AS id FROM users INNER JOIN orders ON orders.user_id = users.id WHERE orders.status = 'active') AS matched WHERE matched.id = users.id)" }
 
-      it "formats the NOT EXISTS subquery" do
-        expect(output).to include("where   not exists (")
-      end
+      it "formats the full output with correct nested indentation" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  u.id
+          from    Users u
+          where   not exists (
+                      select  1
+                      from    (
+                          select  distinct
+                                  u.id as id
 
-      it "formats the inner SELECT" do
-        expect(output).to include("select  1")
-      end
+                          from    Users u
+                                  inner join Orders o on o.user_id = u.id
 
-      it "preserves the derived table structure" do
-        expect(output).to include(") matched")
+                          where   o.status = 'active'
+                      ) matched
+                      where   matched.id = u.id
+                  )
+        SQL
       end
+    end
 
-      it "formats the derived table content" do
-        expect(output).to include("select  distinct")
-      end
+    context "with NOT EXISTS containing a lateral join and compound subquery" do
+      let(:value) { "SELECT users.id FROM users WHERE NOT EXISTS (SELECT 1 FROM (SELECT users.id FROM users INNER JOIN LATERAL (SELECT orders.id FROM orders WHERE orders.user_id = users.id UNION ALL SELECT orders.id FROM orders WHERE orders.email = users.email) AS matches ON true) AS excluded WHERE excluded.id = users.id)" }
 
-      it "formats the inner WHERE condition" do
-        expect(output).to include("where   matched.id =")
+      it "formats the full output with correct nested indentation" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  u.id
+          from    Users u
+          where   not exists (
+                      select  1
+                      from    (
+                          select  u.id
+
+                          from    Users u
+                                  inner join lateral (
+                                      select  o.id
+                                      from    Orders o
+                                      where   o.user_id = u.id
+
+                                      union all
+
+                                      select  o.id
+                                      from    Orders o
+                                      where   o.email = u.email
+                                  ) matches on true
+                      ) excluded
+                      where   excluded.id = u.id
+                  )
+        SQL
       end
     end
 
@@ -1385,6 +1416,63 @@ RSpec.describe SqlBeautifier::Formatter do
           from    Users
           where   id = 1
           returning id, name
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## DML Subquery Integration
+    ############################################################################
+
+    context "with a DELETE WHERE subquery" do
+      let(:value) { "DELETE FROM temp_users WHERE id IN (SELECT user_id FROM orders WHERE status = 'cancelled')" }
+
+      it "formats the subquery in the WHERE clause" do
+        expect(output).to match_formatted_text(<<~SQL)
+          delete
+          from    Temp_Users
+          where   id in (
+                      select  user_id
+                      from    Orders o
+                      where   status = 'cancelled'
+                  )
+        SQL
+      end
+    end
+
+    context "with a DELETE USING subquery" do
+      let(:value) { "DELETE FROM temp_users t USING (SELECT DISTINCT constituents.id FROM constituents INNER JOIN encounters ON encounters.constituent_id = constituents.id WHERE encounters.status = 'active') AS excluded WHERE excluded.id = t.id" }
+
+      it "formats the subquery in the USING clause" do
+        expect(output).to match_formatted_text(<<~SQL)
+          delete
+          from    Temp_Users t
+          using   (
+                      select  distinct
+                              c.id
+
+                      from    Constituents c
+                              inner join Encounters e on e.constituent_id = c.id
+
+                      where   e.status = 'active'
+                  ) as excluded
+          where   excluded.id = t.id
+        SQL
+      end
+    end
+
+    context "with an UPDATE WHERE subquery" do
+      let(:value) { "UPDATE users SET active = false WHERE id IN (SELECT user_id FROM bans WHERE permanent = true)" }
+
+      it "formats the subquery in the WHERE clause" do
+        expect(output).to match_formatted_text(<<~SQL)
+          update  Users
+          set     active = false
+          where   id in (
+                      select  user_id
+                      from    Bans b
+                      where   permanent = true
+                  )
         SQL
       end
     end

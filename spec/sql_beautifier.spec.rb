@@ -593,10 +593,10 @@ RSpec.describe SqlBeautifier do
                       select  user_id
                       from    Orders o
                       where   product_id in (
-                                              select  id
-                                              from    Products p
-                                              where   active = true
-                                          )
+                                  select  id
+                                  from    Products p
+                                  where   active = true
+                              )
                   )
         SQL
       end

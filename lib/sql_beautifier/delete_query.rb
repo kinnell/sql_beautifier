@@ -118,7 +118,8 @@ module SqlBeautifier
     end
 
     def render_using
-      "\n#{Util.keyword_padding('using')}#{@using_clause}"
+      formatted_using_text = "\n#{Util.keyword_padding('using')}#{@using_clause}"
+      Query.format_subqueries_in_text(formatted_using_text, depth: @depth)
     end
   end
 end

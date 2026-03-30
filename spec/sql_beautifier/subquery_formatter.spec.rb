@@ -43,12 +43,12 @@ RSpec.describe SqlBeautifier::Query, "subquery formatting" do
       let(:text) { "where   id in (select user_id from orders)" }
       let(:depth) { 4 }
 
-      it "indents the subquery content relative to the depth" do
-        expect(output).to include("              select  user_id")
+      it "indents the subquery content relative to keyword column width" do
+        expect(output).to include("            select  user_id")
       end
 
-      it "indents the closing paren relative to the depth" do
-        expect(output).to include("            )")
+      it "indents the closing paren at keyword column width" do
+        expect(output).to include("        )")
       end
     end
 
