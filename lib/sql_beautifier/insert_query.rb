@@ -73,6 +73,8 @@ module SqlBeautifier
       remaining = normalized_sql[scanner.position..].strip
       scanner.advance!(normalized_sql.length - scanner.position)
 
+      remaining = unwrap_parenthesized_select(remaining)
+
       values_rows = nil
       select_sql = nil
       on_conflict_clause = nil
@@ -89,6 +91,15 @@ module SqlBeautifier
       end
 
       [values_rows, select_sql, on_conflict_clause, returning_clause]
+    end
+
+    def self.unwrap_parenthesized_select(text)
+      return text unless Tokenizer.outer_parentheses_wrap_all?(text)
+
+      inner_content = Util.strip_outer_parentheses(text)
+      return text unless Scanner.new(inner_content).keyword_at?("select")
+
+      inner_content
     end
 
     def self.split_values_tail(values_text)
@@ -178,7 +189,7 @@ module SqlBeautifier
       Tokenizer.find_top_level_keyword(text, keyword)
     end
 
-    private_class_method :parse_column_list, :parse_body, :split_values_tail, :scan_value_rows, :split_select_tail, :split_on_conflict_and_returning, :find_top_level_keyword_position
+    private_class_method :parse_column_list, :parse_body, :unwrap_parenthesized_select, :split_values_tail, :scan_value_rows, :split_select_tail, :split_on_conflict_and_returning, :find_top_level_keyword_position
 
     private
 

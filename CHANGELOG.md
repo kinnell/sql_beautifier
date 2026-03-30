@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Fix `INSERT INTO ... (columns) (SELECT ...)` not being recognized — `InsertQuery.parse_body` now unwraps parenthesized SELECT subqueries, supporting PostgreSQL's valid `INSERT INTO table (cols) (SELECT ...)` syntax
+
 ## [0.10.1] - 2026-03-30
 
 - Fix nested subquery indentation growing excessively at each depth level — `subquery_base_indent_for` was adding the parent formatter's `depth` to the base indent calculation for subqueries on `from`/`where` lines, double-counting indentation that the parent's `format_as_subquery` would also apply; the method now computes base indentation relative to column 0 of the clause text

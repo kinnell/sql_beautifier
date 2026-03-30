@@ -94,6 +94,26 @@ RSpec.describe SqlBeautifier::InsertQuery do
       end
     end
 
+    context "with INSERT...SELECT wrapped in parentheses" do
+      let(:result) { described_class.parse("insert into users (id) (select distinct users.id from users where users.active = true)") }
+
+      it "returns an InsertQuery instance" do
+        expect(result).to be_a(described_class)
+      end
+
+      it "parses the column list" do
+        expect(result.column_list).to eq("id")
+      end
+
+      it "parses the select SQL without wrapping parentheses" do
+        expect(result.select_sql).to eq("select distinct users.id from users where users.active = true")
+      end
+
+      it "has no values rows" do
+        expect(result.values_rows).to be_nil
+      end
+    end
+
     context "with INSERT without column list" do
       let(:result) { described_class.parse("insert into users values (1, 'Alice')") }
 
@@ -220,6 +240,26 @@ RSpec.describe SqlBeautifier::InsertQuery do
                   inner join Users u on u.id = o.user_id
 
           where   o.status = 'closed'
+        SQL
+      end
+    end
+
+    context "with INSERT...SELECT wrapped in parentheses" do
+      let(:output) { described_class.parse("insert into export_table (id) (select distinct users.id from users inner join orders on orders.user_id = users.id where users.active = true)").render }
+
+      it "formats the SELECT without wrapping parentheses" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Export_Table (
+              id
+          )
+
+          select  distinct
+                  u.id
+
+          from    Users u
+                  inner join Orders o on o.user_id = u.id
+
+          where   u.active = true
         SQL
       end
     end

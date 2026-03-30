@@ -1309,6 +1309,32 @@ RSpec.describe SqlBeautifier::Formatter do
       end
     end
 
+    context "with INSERT...SELECT wrapped in parentheses" do
+      let(:value) { "INSERT INTO export_table (id) (SELECT DISTINCT users.id FROM users INNER JOIN orders ON orders.user_id = users.id LEFT JOIN departments ON departments.name = orders.department WHERE users.active = true AND orders.status = 'closed' AND (departments.id IS NULL OR departments.exportable = true))" }
+
+      it "formats the INSERT and delegates the parenthesized SELECT" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Export_Table (
+              id
+          )
+
+          select  distinct
+                  u.id
+
+          from    Users u
+                  inner join Orders o on o.user_id = u.id
+                  left join Departments d on d.name = o.department
+
+          where   u.active = true
+                  and o.status = 'closed'
+                  and (
+                      d.id is null
+                      or d.exportable = true
+                  )
+        SQL
+      end
+    end
+
     ############################################################################
     ## UPDATE Integration
     ############################################################################
