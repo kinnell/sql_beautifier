@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.10.4] - 2026-03-30
+
 - Add `IN` list multiline formatting — `WHERE x IN (1, 2, 3)` value lists with 2+ items are now expanded to one item per line with proper indentation; single-item lists and `IN (SELECT ...)` subqueries are left unchanged
 - Fix redundant parentheses after `NOT` not being stripped — `NOT ((a = 1 OR b = 2))` is now reduced to `NOT (a = 1 OR b = 2)`, removing unnecessary doubled parentheses while preserving semantically required grouping
 
