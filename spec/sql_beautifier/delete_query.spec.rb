@@ -34,6 +34,14 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       end
     end
 
+    context "with unrecognized text before a valid clause" do
+      let(:result) { described_class.parse("delete from users u garbage where id = 1") }
+
+      it "returns nil" do
+        expect(result).to be_nil
+      end
+    end
+
     context "with a simple DELETE FROM...WHERE" do
       let(:result) { described_class.parse("delete from users where id = 1") }
 

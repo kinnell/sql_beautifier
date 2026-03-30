@@ -4,6 +4,8 @@ module SqlBeautifier
   class DeleteQuery < Base
     include DmlRendering
 
+    CLAUSE_KEYWORDS = %w[using where returning].freeze
+
     option :table_name
     option :table_alias, default: -> {}
     option :using_clause, default: -> {}
@@ -30,8 +32,12 @@ module SqlBeautifier
       table_alias = parse_table_alias(scanner)
 
       remaining_text = normalized_sql[scanner.position..].strip
+      if remaining_text.present?
+        remaining_scanner = Scanner.new(remaining_text)
+        return nil unless CLAUSE_KEYWORDS.any? { |keyword| remaining_scanner.keyword_at?(keyword) }
+      end
+
       clauses = split_delete_clauses(normalized_sql, scanner.position)
-      return nil if remaining_text.present? && clauses.values.all?(&:nil?)
 
       new(
         table_name: table_name,
@@ -57,8 +63,7 @@ module SqlBeautifier
     def self.parse_table_alias(scanner)
       return nil if scanner.finished?
 
-      next_keywords = %w[using where returning]
-      return nil if next_keywords.any? { |keyword| scanner.keyword_at?(keyword) }
+      return nil if CLAUSE_KEYWORDS.any? { |keyword| scanner.keyword_at?(keyword) }
 
       scanner.skip_past_keyword!("as") if scanner.keyword_at?("as")
 

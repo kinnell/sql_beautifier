@@ -15,7 +15,8 @@
 - Fix `DeleteQuery` silently dropping table aliases (e.g. `DELETE FROM users u WHERE u.id = 1` rendered without the `u` alias, producing invalid SQL) — aliases (with or without `AS`) are now captured and included in the formatted output
 - Fix `DeleteQuery` mis-parsing `DELETE FROM ONLY <table>` — `ONLY` was read as the table name; the parser now bails out for unsupported modifiers
 - Fix `InsertQuery` silently dropping unrecognized trailing text after VALUES tuples (e.g. `VALUES (1) foo` would drop `foo`) — remaining text must start with `ON CONFLICT` or `RETURNING`, otherwise the parser bails out
-- Fix `DeleteQuery` silently dropping unrecognized text between table/alias and clause keywords — the parser now bails out when remaining text doesn't match any known clause
+- Fix `DeleteQuery` silently dropping unrecognized text between table/alias and clause keywords — the parser now validates remaining text starts with a known clause keyword (`USING`, `WHERE`, `RETURNING`)
+- Fix `InsertQuery` silently dropping trailing commas after VALUES tuples (e.g. `VALUES (1),`) — a comma not followed by another tuple is now treated as a parse failure
 
 ## [0.8.0] - 2026-03-29
 

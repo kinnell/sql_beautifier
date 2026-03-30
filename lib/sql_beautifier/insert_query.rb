@@ -127,6 +127,9 @@ module SqlBeautifier
         break unless !scanner.finished? && scanner.current_char == Constants::COMMA
 
         scanner.advance!
+        scanner.skip_whitespace!
+
+        return [[], values_text] if scanner.finished? || scanner.current_char != Constants::OPEN_PARENTHESIS
       end
 
       remaining_text = values_text[scanner.position..].strip

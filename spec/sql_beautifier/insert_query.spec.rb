@@ -34,6 +34,14 @@ RSpec.describe SqlBeautifier::InsertQuery do
       end
     end
 
+    context "with a trailing comma after VALUES tuples" do
+      let(:result) { described_class.parse("insert into users (id) values (1),") }
+
+      it "returns nil" do
+        expect(result).to be_nil
+      end
+    end
+
     context "with a simple INSERT...VALUES" do
       let(:result) { described_class.parse("insert into users (id, name) values (1, 'Alice')") }
 
