@@ -20,7 +20,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true AND (role = 'admin' OR role = 'mod')" }
 
       it "always expands the group to multiple lines" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -38,7 +38,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:value) { "SELECT id FROM users WHERE (a = 1 OR b = 2) AND (c = 3 OR d = 4)" }
 
       it "expands every group to multiple lines" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -59,7 +59,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:value) { "SELECT id FROM users WHERE (active = true AND verified = true)" }
 
       it "keeps it as a single top-level condition" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   (active = true and verified = true);
@@ -79,7 +79,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true AND (role = 'admin' OR role = 'mod')" }
 
       it "keeps the short group inline" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -94,7 +94,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true AND (very_long_column_name_alpha = 'some_very_long_value_here' OR very_long_column_name_beta = 'another_very_long_value_there')" }
 
       it "expands the long group to multiple lines" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -120,7 +120,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:config_value) { 37 }
 
       it "expands the group" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  *
 
           from    Users u
@@ -138,7 +138,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:config_value) { 38 }
 
       it "keeps the group inline" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  *
 
           from    Users u
@@ -153,7 +153,7 @@ RSpec.describe "inline_group_threshold configuration" do
       let(:config_value) { 39 }
 
       it "keeps the group inline" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  *
 
           from    Users u

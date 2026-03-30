@@ -20,7 +20,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "pads single-word keywords to 8 characters" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -35,7 +35,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department HAVING count(*) > 5 ORDER BY name LIMIT 10" }
 
       it "pads keywords consistently and uses single space for multi-word keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -57,7 +57,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "uses 8-character continuation indent for joins" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id
 
           from    Users u
@@ -78,7 +78,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "pads single-word keywords to 10 characters" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select    id,
                     name
 
@@ -93,7 +93,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department HAVING count(*) > 5 ORDER BY name LIMIT 10" }
 
       it "widens padding for all padded keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select    id
 
           from      Users u
@@ -115,7 +115,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "uses 10-character continuation indent for joins" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select    u.id
 
           from      Users u
@@ -128,7 +128,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
       it "widens the CTE body indentation" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with      active as (
                         select    id
                         from      Users u
@@ -153,7 +153,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "pads single-word keywords to 12 characters" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select      id,
                       name
 
@@ -168,7 +168,7 @@ RSpec.describe "keyword_column_width configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department HAVING count(*) > 5 ORDER BY name LIMIT 10" }
 
       it "widens padding for all padded keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select      id
 
           from        Users u

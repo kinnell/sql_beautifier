@@ -88,7 +88,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set name = 'Alice' where id = 1").render }
 
       it "formats with keyword alignment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     name = 'Alice'
           where   id = 1
@@ -100,7 +100,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set name = 'Alice', email = 'alice@example.com', active = true where id = 1").render }
 
       it "formats each assignment on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     name = 'Alice',
                   email = 'alice@example.com',
@@ -114,7 +114,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set name = accounts.name from accounts where users.account_id = accounts.id").render }
 
       it "formats with FROM clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     name = accounts.name
           from    accounts
@@ -127,7 +127,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set name = 'Alice' where id = 1 returning id, name").render }
 
       it "formats with returning clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     name = 'Alice'
           where   id = 1
@@ -140,7 +140,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set active = false").render }
 
       it "formats without where clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     active = false
         SQL
@@ -151,7 +151,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set updated_at = now(), name = upper('alice') where id = 1").render }
 
       it "preserves function calls in assignments" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     updated_at = now(),
                   name = upper('alice')
@@ -164,7 +164,7 @@ RSpec.describe SqlBeautifier::UpdateQuery do
       let(:output) { described_class.parse("update users set active = false where role = 'guest' and last_login < '2024-01-01'").render }
 
       it "formats WHERE conditions on separate lines" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     active = false
           where   role = 'guest'

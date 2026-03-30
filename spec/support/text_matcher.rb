@@ -2,7 +2,7 @@
 
 RSpec::Matchers.define :match_formatted_text do |expected|
   define_method(:expectation) do
-    expected.chomp.tr("·", " ")
+    expected.tr("·", " ")
   end
 
   match do |actual|
@@ -22,7 +22,7 @@ end
 
 RSpec::Matchers.define :include_formatted_text do |expected|
   define_method(:expectation) do
-    expected.chomp.tr("·", " ")
+    expected.tr("·", " ")
   end
 
   match do |actual|

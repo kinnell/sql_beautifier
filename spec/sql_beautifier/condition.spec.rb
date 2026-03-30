@@ -235,7 +235,7 @@ RSpec.describe SqlBeautifier::Condition do
 
       it "renders the group with expanded indentation" do
         rendered = condition.render(indent_width: 8)
-        expect(rendered).to match_formatted_text(<<~SQL)
+        expect(rendered).to match_formatted_text(<<~SQL.chomp)
           (
           ············role = 'admin'
           ············or role = 'mod'
@@ -286,7 +286,7 @@ RSpec.describe SqlBeautifier::Condition do
       end
 
       it "renders each condition on its own indented line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           ········a = 1
           ········and b = 2
           ········and c = 3
@@ -337,7 +337,7 @@ RSpec.describe SqlBeautifier::Condition do
       let(:text) { "active = true and name = 'Alice'" }
 
       it "formats via the Condition tree" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           ········active = true
           ········and name = 'Alice'
         SQL
@@ -348,7 +348,7 @@ RSpec.describe SqlBeautifier::Condition do
       let(:text) { "active = true" }
 
       it "returns the raw text" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           active = true
         SQL
       end
@@ -374,7 +374,7 @@ RSpec.describe SqlBeautifier::Condition do
       let(:text) { "(a = 1 and b = 2) and (c = 3 and d = 4)" }
 
       it "flattens all conditions" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           ········a = 1
           ········and b = 2
           ········and c = 3

@@ -134,7 +134,7 @@ RSpec.describe SqlBeautifier::Query do
       let(:normalized_sql) { "select id from users" }
 
       it "uses single-line clause separation" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
         SQL

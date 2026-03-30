@@ -308,7 +308,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create table foo as (select id from users)" }
 
       it "formats the preamble and indented body" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create table Foo as (
               select  id
               from    Users u
@@ -321,7 +321,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "CREATE TABLE FOO AS (SELECT ID FROM USERS)" }
 
       it "formats with lowercase keywords and PascalCase table name" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create table Foo as (
               select  id
               from    Users u
@@ -334,7 +334,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create temp table foo as (select id from users)" }
 
       it "formats with the temp modifier" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -411,7 +411,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create temp table foo as select id from users" }
 
       it "wraps the body in parentheses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -424,7 +424,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create temp table foo as (select id from users) with data" }
 
       it "appends the suffix after the closing parenthesis" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -437,7 +437,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create temp table foo as (select id from users) with no data" }
 
       it "appends the suffix after the closing parenthesis" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -450,7 +450,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create temp table foo as select id from users with no data" }
 
       it "wraps the body in parentheses and appends the suffix" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -477,7 +477,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       let(:value) { "create temp table foo as (select users.id from users inner join orders on orders.user_id = users.id where users.active = true)" }
 
       it "formats the body with full clause layout" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  u.id
 

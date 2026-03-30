@@ -20,7 +20,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users" }
 
       it "uses single newlines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u;
         SQL
@@ -31,7 +31,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true" }
 
       it "uses single newlines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   active = true;
@@ -43,7 +43,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users ORDER BY created_at DESC LIMIT 25" }
 
       it "uses single newlines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           order by created_at desc
@@ -56,7 +56,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "uses blank lines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -71,7 +71,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true AND verified = true" }
 
       it "uses blank lines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -86,7 +86,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "uses blank lines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id
 
           from    Users u
@@ -99,7 +99,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT department, count(*) FROM users GROUP BY department" }
 
       it "uses blank lines between clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  department,
                   count(*)
 
@@ -122,7 +122,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users" }
 
       it "uses blank lines between all clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u;
@@ -134,7 +134,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true" }
 
       it "uses blank lines between all clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -148,7 +148,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id FROM users ORDER BY created_at DESC LIMIT 25" }
 
       it "uses blank lines between all clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -164,7 +164,7 @@ RSpec.describe "clause_spacing_mode configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "uses blank lines between all clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 

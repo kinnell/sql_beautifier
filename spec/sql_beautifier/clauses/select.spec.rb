@@ -8,7 +8,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id" }
 
       it "formats on one line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id
         SQL
       end
@@ -18,7 +18,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "*" }
 
       it "formats on one line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  *
         SQL
       end
@@ -28,7 +28,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "  id ,  name ,  email  " }
 
       it "strips whitespace from each column" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id,
                   name,
                   email
@@ -40,7 +40,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id, name, email" }
 
       it "places each on its own line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id,
                   name,
                   email
@@ -52,7 +52,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id, name as full_name, email as contact_email" }
 
       it "keeps each alias with its column" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id,
                   name as full_name,
                   email as contact_email
@@ -64,7 +64,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id, coalesce(name, 'unknown'), email" }
 
       it "keeps function arguments together" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id,
                   coalesce(name, 'unknown'),
                   email
@@ -76,7 +76,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id, (select count(*) from orders) as order_count" }
 
       it "keeps the subquery intact with its alias" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id,
                   (select count(*) from orders) as order_count
         SQL
@@ -87,7 +87,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "id, price * quantity as total, name" }
 
       it "keeps the expression together" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id,
                   price * quantity as total,
                   name
@@ -99,7 +99,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct_count" }
 
       it "does not treat the column as a DISTINCT prefix" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct_count
         SQL
       end
@@ -109,7 +109,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct_count, distinct_values" }
 
       it "formats them as normal columns" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct_count,
                   distinct_values
         SQL
@@ -124,7 +124,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct id, name, email" }
 
       it "places distinct on the select line with columns below" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct
                   id,
                   name,
@@ -137,7 +137,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct id" }
 
       it "places distinct on the select line with the column below" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct
                   id
         SQL
@@ -152,7 +152,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct on (user_id) id, name, email" }
 
       it "places distinct on(...) on the select line with columns below" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct on (user_id)
                   id,
                   name,
@@ -165,7 +165,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct on (user_id, created_at) id, name" }
 
       it "keeps the full distinct on(...) on the select line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct on (user_id, created_at)
                   id,
                   name
@@ -177,7 +177,7 @@ RSpec.describe SqlBeautifier::Clauses::Select do
       let(:value) { "distinct on (user_id) name" }
 
       it "places the column below the distinct on(...) line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  distinct on (user_id)
                   name
         SQL

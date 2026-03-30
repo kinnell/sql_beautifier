@@ -98,7 +98,7 @@ RSpec.describe SqlBeautifier::Join do
       let(:output) { join.render(continuation_indent: "        ", condition_indent: "            ") }
 
       it "renders without ON clause" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           ········cross join Roles r
         SQL
       end

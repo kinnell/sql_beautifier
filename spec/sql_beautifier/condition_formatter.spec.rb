@@ -23,7 +23,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "active = true" }
 
     it "returns the condition as-is" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         active = true
       SQL
     end
@@ -33,7 +33,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "active = true and name = 'Alice'" }
 
     it "formats each condition on its own indented line" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········active = true
         ········and name = 'Alice'
       SQL
@@ -44,7 +44,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "a = 1 and b = 2 and c = 3" }
 
     it "formats each condition on its own indented line" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········and b = 2
         ········and c = 3
@@ -56,7 +56,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "a = 1 or b = 2 or c = 3" }
 
     it "formats each condition with its OR conjunction" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········or b = 2
         ········or c = 3
@@ -68,7 +68,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "a = 1 and b = 2 or c = 3" }
 
     it "formats each condition with its conjunction" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········and b = 2
         ········or c = 3
@@ -80,7 +80,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "active = true and (role = 'admin' or role = 'mod')" }
 
     it "expands the group to multiple lines" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········active = true
         ········and (
         ············role = 'admin'
@@ -94,7 +94,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "active = true and (very_long_column_name_alpha = 'some_really_long_string_value_here' or very_long_column_name_beta = 'another_really_long_string_value')" }
 
     it "expands the group to multiple lines with increased indent" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········active = true
         ········and (
         ············very_long_column_name_alpha = 'some_really_long_string_value_here'
@@ -108,7 +108,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "(a = 1 and b = 2) and (c = 3 and d = 4)" }
 
     it "flattens all inner conditions to the top level" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········and b = 2
         ········and c = 3
@@ -121,7 +121,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "(a = 1 or b = 2) and (c = 3 or d = 4)" }
 
     it "expands each group to multiple lines without flattening" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········(
         ············a = 1
         ············or b = 2
@@ -138,7 +138,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "a = 1 and (b = 2)" }
 
     it "unwraps the redundant parens" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········and b = 2
       SQL
@@ -149,7 +149,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "(a = 1 and b = 2)" }
 
     it "expands the group to multiple lines" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········(
         ············a = 1
         ············and b = 2
@@ -162,7 +162,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "lower(name) = 'alice' and coalesce(status, 'unknown') = 'active'" }
 
     it "preserves function parentheses" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········lower(name) = 'alice'
         ········and coalesce(status, 'unknown') = 'active'
       SQL
@@ -173,7 +173,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "a = 1 and (b = 2 or (c = 3 and d = 4))" }
 
     it "expands each level of nesting to multiple lines" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········and (
         ············b = 2
@@ -191,7 +191,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:output) { described_class.format(value, indent_width: 12) }
 
     it "uses the specified indentation" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ············a = 1
         ············and b = 2
       SQL
@@ -202,7 +202,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "(a = 1 or b = 2) and c = 3 and (d = 4 or e = 5)" }
 
     it "expands each group to multiple lines alongside plain conditions" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········(
         ············a = 1
         ············or b = 2
@@ -220,7 +220,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "(a = 1 or b = 2) or (c = 3 or d = 4)" }
 
     it "flattens all inner conditions to the top level" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········or b = 2
         ········or c = 3
@@ -233,7 +233,7 @@ RSpec.describe SqlBeautifier::Condition, ".format" do
     let(:value) { "a = 1 and ((b = 2))" }
 
     it "unwraps all redundant layers" do
-      expect(output).to match_formatted_text(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL.chomp)
         ········a = 1
         ········and b = 2
       SQL

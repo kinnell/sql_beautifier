@@ -26,7 +26,7 @@ RSpec.describe SqlBeautifier::StatementAssembler do
       end
 
       it "joins statements with a semicolon separator" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Constituents c;
 
@@ -40,7 +40,7 @@ RSpec.describe SqlBeautifier::StatementAssembler do
       let(:value) { "SELECT id FROM users; SELECT id FROM orders; SELECT id FROM products" }
 
       it "joins all statements with semicolon separators" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u;
 
@@ -71,7 +71,7 @@ RSpec.describe SqlBeautifier::StatementAssembler do
       end
 
       it "joins statements without semicolons" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Constituents c
 

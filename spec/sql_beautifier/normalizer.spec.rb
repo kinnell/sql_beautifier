@@ -32,7 +32,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "  SELECT   id ,  name   FROM   users  " }
 
       it "collapses to single spaces" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id , name from users
         SQL
       end
@@ -42,7 +42,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT Id, Name FROM Users" }
 
       it "lowercases everything" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id, name from users
         SQL
       end
@@ -52,7 +52,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE name = 'John DOE'" }
 
       it "preserves string literal case" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where name = 'John DOE'
         SQL
       end
@@ -62,7 +62,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE name = 'O''Brien'" }
 
       it "preserves escaped quotes" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where name = 'O''Brien'
         SQL
       end
@@ -72,7 +72,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "User_Id", "Full_Name" FROM "Users"' }
 
       it "strips delimiters and lowercases contents" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select user_id, full_name from users
         SQL
       end
@@ -82,7 +82,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "Full Name" FROM users' }
 
       it "preserves delimiters and lowercases contents" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select "full name" from users
         SQL
       end
@@ -92,7 +92,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "has""quotes"" inside" FROM users' }
 
       it "preserves delimiters for identifiers containing double quotes" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select "has""quotes"" inside" from users
         SQL
       end
@@ -102,7 +102,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE first_name = 'Alice' AND last_name = 'O''Brien' AND status = 'Active'" }
 
       it "preserves case inside all string literals" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where first_name = 'Alice' and last_name = 'O''Brien' and status = 'Active'
         SQL
       end
@@ -112,7 +112,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE name IN ('Alice', 'BOB', 'Charlie')" }
 
       it "preserves case inside each string" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where name in ('Alice', 'BOB', 'Charlie')
         SQL
       end
@@ -122,7 +122,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE bio = 'Hello   World'" }
 
       it "preserves whitespace inside the string literal" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where bio = 'Hello   World'
         SQL
       end
@@ -140,7 +140,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT\tid\tFROM\tusers" }
 
       it "collapses tabs to single spaces" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id from users
         SQL
       end
@@ -156,7 +156,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       end
 
       it "collapses newlines to single spaces" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id from users where active = true
         SQL
       end
@@ -174,7 +174,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "Users" FROM "Users"' }
 
       it "removes the quotes and lowercases" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select users from users
         SQL
       end
@@ -184,7 +184,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "has space" FROM users' }
 
       it "preserves double quotes around the lowercased identifier" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select "has space" from users
         SQL
       end
@@ -194,7 +194,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "Column1" FROM users' }
 
       it "removes quotes from a safe lowercased identifier" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select column1 from users
         SQL
       end
@@ -204,7 +204,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT 'A''B' FROM users" }
 
       it "preserves escaped quotes inside the string" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select 'A''B' from users
         SQL
       end
@@ -218,7 +218,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT id FROM users;" }
 
       it "removes the trailing semicolon" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id from users
         SQL
       end
@@ -228,7 +228,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT id FROM users;  \n  " }
 
       it "removes the trailing semicolon and whitespace" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id from users
         SQL
       end
@@ -238,7 +238,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT 1; /*__sqlb_0__*/" }
 
       it "preserves the semicolon and sentinel" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select 1; /*__sqlb_0__*/
         SQL
       end
@@ -248,7 +248,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT 1;;" }
 
       it "removes only the last semicolon" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select 1;
         SQL
       end
@@ -258,7 +258,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE name = 'test;value'" }
 
       it "preserves the semicolon inside the string" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where name = 'test;value'
         SQL
       end
@@ -268,7 +268,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT 1" }
 
       it "returns unchanged" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select 1
         SQL
       end
@@ -282,7 +282,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT /*__sqlb_0__*/ id FROM users" }
 
       it "passes the sentinel through verbatim" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select /*__sqlb_0__*/ id from users
         SQL
       end
@@ -292,7 +292,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "/*__sqlb_0__*/ SELECT id FROM users" }
 
       it "passes the sentinel through verbatim" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           /*__sqlb_0__*/ select id from users
         SQL
       end
@@ -302,7 +302,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT id FROM users /*__sqlb_0__*/" }
 
       it "passes the sentinel through verbatim" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id from users /*__sqlb_0__*/
         SQL
       end
@@ -312,7 +312,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "/*__sqlb_0__*/ SELECT /*__sqlb_1__*/ id FROM users /*__sqlb_2__*/" }
 
       it "passes all sentinels through verbatim" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           /*__sqlb_0__*/ select /*__sqlb_1__*/ id from users /*__sqlb_2__*/
         SQL
       end
@@ -322,7 +322,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT /*__sqlb_42__*/ id FROM users" }
 
       it "passes the sentinel through verbatim" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select /*__sqlb_42__*/ id from users
         SQL
       end
@@ -332,7 +332,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE name = 'test--value'" }
 
       it "preserves -- inside the string" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where name = 'test--value'
         SQL
       end
@@ -342,7 +342,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT * FROM users WHERE name = 'test/**/value'" }
 
       it "preserves /* */ inside the string" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select * from users where name = 'test/**/value'
         SQL
       end
@@ -352,7 +352,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "User--Name" FROM users' }
 
       it "preserves -- inside the identifier" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select "user--name" from users
         SQL
       end
@@ -362,7 +362,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { 'SELECT "Cost/*Center*/Code" FROM users' }
 
       it "preserves /* */ inside the identifier" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select "cost/*center*/code" from users
         SQL
       end
@@ -384,7 +384,7 @@ RSpec.describe SqlBeautifier::Normalizer do
       let(:value) { "SELECT id /*__sqlb_" }
 
       it "treats the characters as normal text" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select id /*__sqlb_
         SQL
       end

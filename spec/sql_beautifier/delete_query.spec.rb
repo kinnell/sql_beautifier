@@ -124,7 +124,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users where status = 'inactive'").render }
 
       it "formats with keyword alignment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           where   status = 'inactive'
@@ -136,7 +136,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users").render }
 
       it "formats without where clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
         SQL
@@ -147,7 +147,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users using accounts where users.account_id = accounts.id and accounts.expired = true").render }
 
       it "formats with using and where clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           using   accounts
@@ -161,7 +161,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users where id = 1 returning id, name").render }
 
       it "formats with returning clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           where   id = 1
@@ -174,7 +174,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users u where u.id = 1").render }
 
       it "includes the alias in the from clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users u
           where   u.id = 1
@@ -186,7 +186,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users as u where u.id = 1").render }
 
       it "includes the alias in the from clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users u
           where   u.id = 1
@@ -198,7 +198,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users where status = 'inactive' and last_login < '2024-01-01' and role = 'guest'").render }
 
       it "formats WHERE conditions on separate lines" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           where   status = 'inactive'
@@ -212,7 +212,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
       let(:output) { described_class.parse("delete from users using accounts where users.account_id = accounts.id returning users.id").render }
 
       it "formats all clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           using   accounts

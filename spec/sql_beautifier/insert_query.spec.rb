@@ -156,7 +156,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, name, email) values (1, 'Alice', 'alice@example.com')").render }
 
       it "formats with keyword alignment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name,
@@ -171,7 +171,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, name, email) values (1, 'Alice', 'alice@example.com'), (2, 'Bob', 'bob@example.com')").render }
 
       it "formats each row on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name,
@@ -187,7 +187,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, name, email) select id, name, email from temp_users").render }
 
       it "delegates the SELECT to the formatter" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name,
@@ -207,7 +207,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into archive_orders (id, total) select orders.id, orders.total from orders inner join users on users.id = orders.user_id where orders.status = 'closed'").render }
 
       it "formats the SELECT portion with JOINs and WHERE" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Archive_Orders (
               id,
               total
@@ -228,7 +228,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users values (1, 'Alice')").render }
 
       it "formats without a column list" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users
           values  (1, 'Alice')
         SQL
@@ -239,7 +239,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, name) values (1, 'Alice') returning id, name").render }
 
       it "formats the returning clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -254,7 +254,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, name) values (1, 'Alice') on conflict (id) do nothing").render }
 
       it "formats the on conflict clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -269,7 +269,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, name, email) values (1, 'Alice', 'alice@example.com') on conflict (id) do update set name = excluded.name, email = excluded.email returning id, name").render }
 
       it "formats the on conflict and returning clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name,
@@ -286,7 +286,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
       let(:output) { described_class.parse("insert into users (id, created_at) values (1, now())").render }
 
       it "preserves function calls in values" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               created_at

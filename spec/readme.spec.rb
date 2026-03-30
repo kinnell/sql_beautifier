@@ -7,7 +7,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id, name, email FROM users WHERE active = true ORDER BY name" }
 
     it "formats with spacious spacing and trailing semicolon" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id,
                 name,
                 email
@@ -25,7 +25,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT users.id, users.name FROM users WHERE users.active = true" }
 
     it "aliases the table and replaces all table references" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  u.id,
                 u.name
 
@@ -40,7 +40,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT users.id, orders.total, products.name FROM users INNER JOIN orders ON orders.user_id = users.id INNER JOIN products ON products.id = orders.product_id WHERE users.active = true AND orders.total > 100 ORDER BY orders.total DESC" }
 
     it "formats each join with aliases and reference replacement" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  u.id,
                 o.total,
                 p.name
@@ -61,7 +61,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT DISTINCT id, name, email FROM users" }
 
     it "places distinct on the select line with columns on continuation lines" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  distinct
                 id,
                 name,
@@ -76,7 +76,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT DISTINCT ON (user_id) id, name FROM events" }
 
     it "preserves the distinct on expression" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  distinct on (user_id)
                 id,
                 name
@@ -90,7 +90,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT * FROM users WHERE active = true AND role = 'admin' AND created_at > '2024-01-01'" }
 
     it "formats each condition on its own line" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  *
 
         from    Users u
@@ -106,7 +106,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT * FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator')" }
 
     it "expands the parenthesized group" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  *
 
         from    Users u
@@ -124,7 +124,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT status, count(*) FROM users GROUP BY status HAVING count(*) > 5" }
 
     it "formats group by and having clauses" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  status,
                 count(*)
 
@@ -141,7 +141,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id FROM users ORDER BY created_at DESC LIMIT 25" }
 
     it "formats with compact spacing" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         from    Users u
         order by created_at desc
@@ -154,7 +154,7 @@ RSpec.describe "README examples" do
     let(:value) { "INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'alice@example.com'), (2, 'Bob', 'bob@example.com')" }
 
     it "formats with indented column list and aligned value rows" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         insert into Users (
             id,
             name,
@@ -170,7 +170,7 @@ RSpec.describe "README examples" do
     let(:value) { "INSERT INTO users (id, name) SELECT id, name FROM temp_users WHERE active = true" }
 
     it "formats the INSERT and delegates the SELECT" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         insert into Users (
             id,
             name
@@ -190,7 +190,7 @@ RSpec.describe "README examples" do
     let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO NOTHING RETURNING id" }
 
     it "formats with on conflict and returning clauses" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         insert into Users (
             id,
             name
@@ -206,7 +206,7 @@ RSpec.describe "README examples" do
     let(:value) { "UPDATE users SET name = 'Alice', email = 'alice@example.com' WHERE id = 1" }
 
     it "formats with aligned assignments" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         update  Users
         set     name = 'Alice',
                 email = 'alice@example.com'
@@ -219,7 +219,7 @@ RSpec.describe "README examples" do
     let(:value) { "UPDATE users SET name = accounts.name FROM accounts WHERE users.account_id = accounts.id" }
 
     it "formats with FROM clause" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         update  Users
         set     name = accounts.name
         from    accounts
@@ -232,7 +232,7 @@ RSpec.describe "README examples" do
     let(:value) { "DELETE FROM users WHERE status = 'inactive' AND last_login < '2024-01-01'" }
 
     it "formats with keyword alignment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         delete
         from    Users
         where   status = 'inactive'
@@ -245,7 +245,7 @@ RSpec.describe "README examples" do
     let(:value) { "DELETE FROM users USING accounts WHERE users.account_id = accounts.id RETURNING users.id" }
 
     it "formats with using, where, and returning clauses" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         delete
         from    Users
         using   accounts
@@ -259,7 +259,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id, name FROM users WHERE active = true UNION ALL SELECT id, name FROM admins WHERE role = 'super'" }
 
     it "formats each segment with the operator on its own line" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id,
                 name
 
@@ -283,7 +283,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins ORDER BY id LIMIT 10" }
 
     it "renders trailing clauses after the last segment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         from    Users u
 
@@ -302,7 +302,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT * FROM users WHERE name = 'O''Brien' AND status = 'Active'" }
 
     it "preserves case and escaped quotes inside string literals" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  *
 
         from    Users u
@@ -317,7 +317,7 @@ RSpec.describe "README examples" do
     let(:value) { 'SELECT "User_Id", "Full_Name" FROM "Users"' }
 
     it "lowercases and unquotes safe identifiers" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  user_id,
                 full_name
 
@@ -330,7 +330,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > 100)" }
 
     it "formats the subquery with indentation" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         from    Users u
         where   id in (
@@ -346,7 +346,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id FROM users WHERE active = true" }
 
     it "appends a trailing semicolon by default" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         from    Users u
         where   active = true;
@@ -358,7 +358,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id FROM constituents; SELECT id FROM departments" }
 
     it "formats each statement and separates with a blank line" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         from    Constituents c;
 
@@ -372,7 +372,7 @@ RSpec.describe "README examples" do
     let(:value) { "SELECT id FROM constituents SELECT id FROM departments" }
 
     it "detects and formats each statement independently" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         from    Constituents c;
 
@@ -391,7 +391,7 @@ RSpec.describe "README examples" do
     end
 
     it "preserves line and block comments with compact spacing" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         -- Base Query
         select  id /* primary key */
         from    Users u

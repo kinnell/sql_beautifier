@@ -20,7 +20,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users" }
 
       it "appends a semicolon after the last clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u;
         SQL
@@ -31,7 +31,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "appends a semicolon after the last clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -46,7 +46,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department ORDER BY name LIMIT 25" }
 
       it "appends a semicolon after limit" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -66,7 +66,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users ORDER BY created_at DESC LIMIT 25" }
 
       it "appends a semicolon after limit" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           order by created_at desc
@@ -79,7 +79,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id WHERE users.active = true" }
 
       it "appends a semicolon after the last clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   o.total
 
@@ -95,7 +95,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)" }
 
       it "appends a semicolon after the closing parenthesis" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -110,7 +110,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "WITH active_users AS (SELECT id FROM users WHERE active = true) SELECT * FROM active_users" }
 
       it "appends a semicolon after the main query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active_users as (
                       select  id
                       from    Users u
@@ -127,7 +127,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "WITH active_users AS (SELECT id FROM users WHERE active = true), recent_orders AS (SELECT user_id, total FROM orders) SELECT au.id, ro.total FROM active_users au INNER JOIN recent_orders ro ON ro.user_id = au.id" }
 
       it "appends a semicolon only at the end of the main query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active_users as (
                       select  id
                       from    Users u
@@ -153,7 +153,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "appends a semicolon after the closing parenthesis" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -166,7 +166,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS SELECT id FROM users" }
 
       it "appends a semicolon after the closing parenthesis" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -179,7 +179,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users;" }
 
       it "produces the same output as without the input semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u;
         SQL
@@ -190,7 +190,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "appends a semicolon to the normalized output" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           explain analyze something;
         SQL
       end
@@ -200,7 +200,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM constituents; SELECT id FROM departments" }
 
       it "appends a semicolon after each statement with a blank line between" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Constituents c;
 
@@ -214,7 +214,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM constituents SELECT id FROM departments" }
 
       it "appends a semicolon after each detected statement" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Constituents c;
 
@@ -228,7 +228,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users; SELECT id FROM orders; SELECT id FROM products" }
 
       it "appends a semicolon after each statement" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u;
 
@@ -245,7 +245,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true ORDER BY name; SELECT id FROM departments" }
 
       it "formats each statement fully with trailing semicolons" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -265,7 +265,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active; SELECT id FROM departments" }
 
       it "formats the CTE and the separate statement with trailing semicolons" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active as (
                       select  id
                       from    Users u
@@ -293,7 +293,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users" }
 
       it "does not append a semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
         SQL
@@ -304,7 +304,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id, name FROM users WHERE active = true" }
 
       it "does not append a semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -319,7 +319,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "WITH active_users AS (SELECT id FROM users WHERE active = true) SELECT * FROM active_users" }
 
       it "does not append a semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active_users as (
                       select  id
                       from    Users u
@@ -336,7 +336,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "does not append a semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -349,7 +349,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)" }
 
       it "does not append a semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -364,7 +364,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM constituents; SELECT id FROM departments" }
 
       it "formats each statement without semicolons" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Constituents c
 
@@ -378,7 +378,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM constituents SELECT id FROM departments" }
 
       it "formats each statement without semicolons" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Constituents c
 
@@ -392,7 +392,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "SELECT id FROM users;" }
 
       it "strips the semicolon and does not add one" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
         SQL
@@ -403,7 +403,7 @@ RSpec.describe "trailing_semicolon configuration" do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "does not append a semicolon" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           explain analyze something
         SQL
       end

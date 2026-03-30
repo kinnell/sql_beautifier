@@ -20,7 +20,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT id FROM users" }
 
       it "lowercases all keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u;
         SQL
@@ -31,7 +31,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department HAVING count(*) > 5 ORDER BY name LIMIT 10" }
 
       it "lowercases all clause keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -53,7 +53,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "lowercases clause keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id
 
           from    Users u
@@ -66,7 +66,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true AND verified = true" }
 
       it "lowercases conjunctions" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -81,7 +81,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
       it "lowercases CTE keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active as (
                       select  id
                       from    Users u
@@ -98,7 +98,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "lowercases preamble keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -111,7 +111,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT DISTINCT name FROM users" }
 
       it "lowercases the distinct keyword" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  distinct
                   name
 
@@ -132,7 +132,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT id FROM users" }
 
       it "uppercases clause keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           SELECT  id
           FROM    Users u;
         SQL
@@ -143,7 +143,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department HAVING count(*) > 5 ORDER BY name LIMIT 10" }
 
       it "uppercases all clause keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           SELECT  id
 
           FROM    Users u
@@ -165,7 +165,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "uppercases clause keywords while join keywords remain lowercase" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           SELECT  u.id
 
           FROM    Users u
@@ -178,7 +178,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT id FROM users WHERE active = true AND verified = true" }
 
       it "uppercases clause keywords while conjunctions remain lowercase" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           SELECT  id
 
           FROM    Users u
@@ -193,7 +193,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
       it "uppercases CTE keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           WITH    active AS (
                       SELECT  id
                       FROM    Users u
@@ -210,7 +210,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "uppercases preamble keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           CREATE TEMP TABLE Foo AS (
               SELECT  id
               FROM    Users u
@@ -223,7 +223,7 @@ RSpec.describe "keyword_case configuration" do
       let(:value) { "SELECT DISTINCT name FROM users" }
 
       it "uppercases clause keywords while distinct remains lowercase from normalizer" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           SELECT  distinct
                   name
 

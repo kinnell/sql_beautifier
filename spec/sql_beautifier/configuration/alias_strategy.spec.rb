@@ -20,7 +20,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id FROM users WHERE users.active = true" }
 
       it "aliases with the first letter and replaces table references" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id
           from    Users u
           where   u.active = true;
@@ -32,7 +32,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT active_storage_blobs.id FROM active_storage_blobs" }
 
       it "aliases with initials of each segment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  asb.id
           from    Active_Storage_Blobs asb;
         SQL
@@ -43,7 +43,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "aliases each table and replaces all references" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   o.total
 
@@ -57,7 +57,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT updates.id, uploads.path FROM updates INNER JOIN uploads ON uploads.update_id = updates.id" }
 
       it "disambiguates with counters" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u1.id,
                   u2.path
 
@@ -71,7 +71,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id FROM users usr WHERE users.active = true" }
 
       it "preserves explicit aliases" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  usr.id
           from    Users usr
           where   usr.active = true;
@@ -91,7 +91,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id FROM users WHERE users.active = true" }
 
       it "does not add aliases or replace table references" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  users.id
           from    Users
           where   users.active = true;
@@ -103,7 +103,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "does not add aliases" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  users.id,
                   orders.total
 
@@ -117,7 +117,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT active_storage_blobs.id FROM active_storage_blobs" }
 
       it "PascalCases the table name without an alias" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  active_storage_blobs.id
           from    Active_Storage_Blobs;
         SQL
@@ -136,7 +136,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id FROM users WHERE users.active = true" }
 
       it "uses the callable for alias generation and replaces references" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  tbl_use.id
           from    Users tbl_use
           where   tbl_use.active = true;
@@ -148,7 +148,7 @@ RSpec.describe "alias_strategy configuration" do
       let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id" }
 
       it "uses the callable for each table alias" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  tbl_use.id,
                   tbl_ord.total
 

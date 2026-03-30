@@ -148,7 +148,7 @@ RSpec.describe SqlBeautifier::CompoundQuery do
       let(:output) { described_class.parse("select id from users union select id from admins").render }
 
       it "formats each segment independently" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -172,7 +172,7 @@ RSpec.describe SqlBeautifier::CompoundQuery do
       let(:output) { described_class.parse("select id from users union all select id from admins order by id limit 10").render }
 
       it "appends trailing clauses after a blank line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -203,7 +203,7 @@ RSpec.describe SqlBeautifier::CompoundQuery do
       let(:output) { described_class.parse("select id from users union all select id from admins intersect select id from managers").render }
 
       it "places each operator between its respective segments" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 

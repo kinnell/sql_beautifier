@@ -18,7 +18,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :blocks, text: "/* columns */" } } }
 
     it "replaces the sentinel with the original block comment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  /* columns */ id
         from    Users u
       SQL
@@ -41,7 +41,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     end
 
     it "replaces all sentinels" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  /* pk */ id
         from    /* source */ Users u
       SQL
@@ -64,7 +64,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :line, text: "-- banner" } } }
 
     it "replaces the sentinel with the original comment on its own line" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         -- banner
         select  id
         from    Users u
@@ -83,7 +83,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :line, text: "-- line one\n-- line two" } } }
 
     it "restores all comment lines" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         -- line one
         -- line two
         select  1
@@ -109,7 +109,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     end
 
     it "restores the full banner" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         --------------------------------------------------------------------------------
         -- Base Query (34ms)
         --------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :line, text: "-- divider" } } }
 
     it "replaces the sentinel with the comment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id
         -- divider
         from    Users u
@@ -153,7 +153,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :inline, text: "-- primary key" } } }
 
     it "replaces the sentinel with the inline comment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id -- primary key
         from    Users u
       SQL
@@ -172,7 +172,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :inline, text: "-- primary key" } } }
 
     it "moves trailing content before the comment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id, -- primary key
                 name
         from    Users u
@@ -190,7 +190,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     let(:comment_map) { { 0 => { type: :inline, text: "-- pk" } } }
 
     it "replaces with the comment" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         select  id -- pk
       SQL
     end
@@ -237,7 +237,7 @@ RSpec.describe SqlBeautifier::CommentParser, ".restore" do
     end
 
     it "restores all comment types" do
-      expect(output).to eq(<<~SQL)
+      expect(output).to match_formatted_text(<<~SQL)
         -- header
         select  /* cols */ id -- pk
         from    Users u

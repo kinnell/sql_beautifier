@@ -8,7 +8,7 @@ RSpec.describe SqlBeautifier::Clauses::Having do
       let(:value) { "count(*) > 5" }
 
       it "formats with keyword prefix" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           having  count(*) > 5
         SQL
       end
@@ -18,7 +18,7 @@ RSpec.describe SqlBeautifier::Clauses::Having do
       let(:value) { "count(*) > 5 and sum(total) > 1000" }
 
       it "formats each condition on its own line" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           having  count(*) > 5
                   and sum(total) > 1000
         SQL

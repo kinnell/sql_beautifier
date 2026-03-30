@@ -8,7 +8,7 @@ RSpec.describe SqlBeautifier::Clauses::Limit do
       let(:value) { "10" }
 
       it "formats with keyword" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           limit 10
         SQL
       end
@@ -18,7 +18,7 @@ RSpec.describe SqlBeautifier::Clauses::Limit do
       let(:value) { "$1" }
 
       it "formats with keyword" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           limit $1
         SQL
       end
@@ -28,7 +28,7 @@ RSpec.describe SqlBeautifier::Clauses::Limit do
       let(:value) { "1000" }
 
       it "formats with keyword" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           limit 1000
         SQL
       end
@@ -38,7 +38,7 @@ RSpec.describe SqlBeautifier::Clauses::Limit do
       let(:value) { "  50  " }
 
       it "strips surrounding whitespace" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           limit 50
         SQL
       end

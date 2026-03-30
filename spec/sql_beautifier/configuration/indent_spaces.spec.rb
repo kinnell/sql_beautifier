@@ -20,7 +20,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)" }
 
       it "indents the subquery body by 4 spaces from the base indent" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -35,7 +35,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
       it "indents the CTE body by 4 spaces from the keyword column" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active as (
                       select  id
                       from    Users u
@@ -52,7 +52,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "indents the body by 4 spaces" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -65,7 +65,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders WHERE product_id IN (SELECT id FROM products WHERE active = true))" }
 
       it "increases indentation at each nesting level" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -93,7 +93,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)" }
 
       it "indents the subquery body by 2 spaces from the base indent" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -108,7 +108,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
       it "indents the CTE body by 2 spaces from the keyword column" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active as (
                     select  id
                     from    Users u
@@ -125,7 +125,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "indents the body by 2 spaces" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
             select  id
             from    Users u
@@ -138,7 +138,7 @@ RSpec.describe "indent_spaces configuration" do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders WHERE product_id IN (SELECT id FROM products WHERE active = true))" }
 
       it "increases indentation at each nesting level with narrower steps" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (

@@ -32,7 +32,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users" }
 
       it "returns the formatted query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
         SQL
@@ -120,7 +120,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users WHERE active = true GROUP BY department ORDER BY name LIMIT 25" }
 
       it "produces the expected full output" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -140,7 +140,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)" }
 
       it "formats the subquery with indentation" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -155,7 +155,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id, (SELECT count(*) FROM orders WHERE orders.user_id = users.id) FROM users" }
 
       it "formats the subquery with indentation" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   (
               select  count(*)
@@ -181,7 +181,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "EXPLAIN ANALYZE something" }
 
       it "returns the normalized value with a trailing newline" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           explain analyze something
         SQL
       end
@@ -191,7 +191,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "EXPLAIN SELECT id FROM users" }
 
       it "returns the normalized value with a trailing newline" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           explain select id from users
         SQL
       end
@@ -209,7 +209,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id WHERE users.active = true" }
 
       it "formats with PascalCase tables, aliases, and JOIN on continuation line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   o.total
 
@@ -225,7 +225,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT\tid,\tname\nFROM\tusers\nWHERE\tactive = true" }
 
       it "normalizes whitespace and formats correctly" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -240,7 +240,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id, roles.name FROM users CROSS JOIN roles" }
 
       it "formats the cross join without an ON clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   r.name
 
@@ -264,7 +264,7 @@ RSpec.describe SqlBeautifier::Formatter do
       end
 
       it "produces fully formatted output with aliases throughout" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   u.name,
                   o.total,
@@ -292,7 +292,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT DISTINCT name FROM users ORDER BY name" }
 
       it "formats the DISTINCT prefix with the select clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  distinct
                   name
 
@@ -307,7 +307,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT DISTINCT ON (users.department) users.id, users.name FROM users ORDER BY users.department, users.name" }
 
       it "formats the DISTINCT ON prefix with alias replacement" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  distinct on (u.department)
                   u.id,
                   u.name
@@ -327,7 +327,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id, addresses.city FROM users LEFT OUTER JOIN addresses ON addresses.user_id = users.id" }
 
       it "formats the left outer join with aliases" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   a.city
 
@@ -341,7 +341,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id, orders.total, payments.amount FROM users INNER JOIN orders ON orders.user_id = users.id LEFT JOIN payments ON payments.order_id = orders.id WHERE users.active = true" }
 
       it "formats each join type with aliases" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   o.total,
                   p.amount
@@ -359,7 +359,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT updates.id, uploads.path FROM updates INNER JOIN uploads ON uploads.update_id = updates.id" }
 
       it "disambiguates aliases with counters" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u1.id,
                   u2.path
 
@@ -373,7 +373,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id, orders.total FROM users usr INNER JOIN orders o ON o.user_id = usr.id WHERE users.active = true" }
 
       it "preserves explicit aliases across the full output" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  usr.id,
                   o.total
 
@@ -393,7 +393,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users WHERE active = true AND (role = 'admin' OR role = 'moderator') AND verified = true" }
 
       it "expands parenthesized groups and formats conditions" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
 
           from    Users u
@@ -412,7 +412,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT * FROM Departments WHERE departments.id.enabled = true AND (departments.id IS NULL OR departments.id.exportable = true)" }
 
       it "expands the parenthesized group with alias replacement" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  *
 
           from    Departments d
@@ -430,7 +430,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id AND orders.status = 'active' WHERE users.verified = true AND orders.total > 50" }
 
       it "formats join conditions and WHERE conditions independently" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id
 
           from    Users u
@@ -451,7 +451,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT department, count(*), avg(salary) FROM employees WHERE active = true GROUP BY department HAVING count(*) > 5 AND avg(salary) > 50000 ORDER BY count(*) DESC LIMIT 10" }
 
       it "produces fully formatted output with all clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  department,
                   count(*),
                   avg(salary)
@@ -514,7 +514,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM (SELECT id FROM users)" }
 
       it "formats the derived table without raising an error" do
-        expect(output).to match_formatted_text(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL.chomp)
           select  id
           from    (
           ············select  id
@@ -571,7 +571,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH active_users AS (SELECT id, name FROM users WHERE active = true) SELECT * FROM active_users" }
 
       it "formats the CTE and main query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active_users as (
                       select  id,
                               name
@@ -591,7 +591,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH active_users AS (SELECT id FROM users WHERE active = true), recent_orders AS (SELECT user_id, total FROM orders) SELECT au.id, ro.total FROM active_users au INNER JOIN recent_orders ro ON ro.user_id = au.id" }
 
       it "formats each CTE and the main query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active_users as (
                       select  id
                       from    Users u
@@ -617,7 +617,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH order_details AS (SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id WHERE orders.total > 100) SELECT * FROM order_details" }
 
       it "formats the CTE body with join and alias handling" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    order_details as (
                       select  u.id,
                               o.total
@@ -638,7 +638,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH filtered AS (SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)) SELECT * FROM filtered" }
 
       it "formats both the CTE body and the nested subquery" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    filtered as (
                       select  id
                       from    Users u
@@ -679,7 +679,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH RECURSIVE cte AS (SELECT id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col SELECT * FROM cte" }
 
       it "preserves the SEARCH clause while formatting the CTE body" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    recursive cte as (
                       select  id
                       from    Nodes n
@@ -694,7 +694,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH RECURSIVE cte AS (SELECT id, parent_id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col CYCLE id SET is_cycle USING cycle_path SELECT * FROM cte" }
 
       it "preserves SEARCH and CYCLE clauses while formatting the CTE body" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    recursive cte as (
                       select  id,
                               parent_id
@@ -711,7 +711,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH cte(a, b) AS (SELECT 1, 2) SELECT * FROM cte" }
 
       it "preserves the column list in the header" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    cte (a, b) as (
                       select  1,
                               2
@@ -727,7 +727,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH cte AS MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
 
       it "formats the CTE and preserves the :materialized keyword" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    cte as materialized (
                       select  id
                       from    Users u
@@ -743,7 +743,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH cte AS NOT MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
 
       it "formats the CTE and preserves the :not materialized keywords" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    cte as not materialized (
                       select  id
                       from    Users u
@@ -763,7 +763,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "CREATE TEMP TABLE foo AS (SELECT id FROM users)" }
 
       it "formats the preamble and indented body" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -776,7 +776,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "CREATE TEMP TABLE foo AS SELECT id FROM users" }
 
       it "wraps the body in parentheses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
               select  id
               from    Users u
@@ -853,7 +853,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "CREATE TEMP TABLE IF NOT EXISTS foo AS (SELECT id FROM users)" }
 
       it "includes if not exists in the preamble" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           create temp table if not exists Foo as (
               select  id
               from    Users u
@@ -870,7 +870,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users UNION SELECT id FROM admins" }
 
       it "formats each segment and places UNION on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -886,7 +886,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id, name FROM users UNION ALL SELECT id, name FROM admins" }
 
       it "formats each segment with UNION ALL on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
@@ -906,7 +906,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users INTERSECT SELECT id FROM departments" }
 
       it "formats with INTERSECT on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -922,7 +922,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users EXCEPT SELECT id FROM departments" }
 
       it "formats with EXCEPT on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -938,7 +938,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users INTERSECT ALL SELECT id FROM departments" }
 
       it "formats with INTERSECT ALL on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -954,7 +954,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users EXCEPT ALL SELECT id FROM departments" }
 
       it "formats with EXCEPT ALL on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -970,7 +970,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins UNION SELECT id FROM managers" }
 
       it "formats all three segments with their operators" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -991,7 +991,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users UNION ALL SELECT id FROM admins ORDER BY id LIMIT 10" }
 
       it "formats trailing clauses after the last segment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
 
@@ -1010,7 +1010,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH combined AS (SELECT id FROM users UNION ALL SELECT id FROM admins) SELECT * FROM combined" }
 
       it "formats the CTE body as a compound query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    combined as (
                       select  id
                       from    Users u
@@ -1031,7 +1031,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users WHERE name = 'union all'" }
 
       it "does not split on the string literal" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   name = 'union all'
@@ -1043,7 +1043,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id FROM users WHERE id IN (SELECT id FROM a UNION ALL SELECT id FROM b)" }
 
       it "formats the subquery with its own compound query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id
           from    Users u
           where   id in (
@@ -1063,7 +1063,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT users.id, orders.total FROM users INNER JOIN orders ON orders.user_id = users.id WHERE users.active = true UNION ALL SELECT admins.id, requests.total FROM admins INNER JOIN requests ON requests.admin_id = admins.id WHERE admins.role = 'super'" }
 
       it "formats each segment independently with its own aliases" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  u.id,
                   o.total
 
@@ -1089,7 +1089,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT id FROM active UNION ALL SELECT id FROM admins" }
 
       it "formats the CTE and then the compound main query" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           with    active as (
                       select  id
                       from    Users u
@@ -1115,7 +1115,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'alice@example.com')" }
 
       it "formats the INSERT with column list and values" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name,
@@ -1130,7 +1130,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol')" }
 
       it "formats each value row on its own line" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -1146,7 +1146,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users (id, name) SELECT id, name FROM temp_users WHERE active = true" }
 
       it "formats the INSERT and delegates the SELECT" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -1166,7 +1166,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO archive_orders (id, total) SELECT orders.id, orders.total FROM orders INNER JOIN users ON users.id = orders.user_id WHERE orders.status = 'closed'" }
 
       it "formats the INSERT and delegates the SELECT with JOINs" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Archive_Orders (
               id,
               total
@@ -1187,7 +1187,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users VALUES (1, 'Alice', 'alice@example.com')" }
 
       it "formats without a column list" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users
           values  (1, 'Alice', 'alice@example.com')
         SQL
@@ -1198,7 +1198,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id, name" }
 
       it "formats with the RETURNING clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -1213,7 +1213,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO NOTHING" }
 
       it "formats with the ON CONFLICT clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -1228,7 +1228,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT (id) DO UPDATE SET name = excluded.name RETURNING id" }
 
       it "formats with ON CONFLICT, SET, and RETURNING" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert into Users (
               id,
               name
@@ -1248,7 +1248,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "UPDATE users SET name = 'Alice', email = 'alice@example.com' WHERE id = 1" }
 
       it "formats with keyword alignment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     name = 'Alice',
                   email = 'alice@example.com'
@@ -1261,7 +1261,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "UPDATE users SET name = accounts.name FROM accounts WHERE users.account_id = accounts.id" }
 
       it "formats with FROM clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     name = accounts.name
           from    accounts
@@ -1274,7 +1274,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "UPDATE users SET active = true WHERE id = 1 RETURNING id, active" }
 
       it "formats with RETURNING clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     active = true
           where   id = 1
@@ -1287,7 +1287,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "UPDATE users SET active = false WHERE role = 'guest' AND last_login < '2024-01-01' AND verified = false" }
 
       it "formats WHERE conditions on separate lines" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           update  Users
           set     active = false
           where   role = 'guest'
@@ -1305,7 +1305,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "DELETE FROM users WHERE status = 'inactive'" }
 
       it "formats with keyword alignment" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           where   status = 'inactive'
@@ -1317,7 +1317,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "DELETE FROM temp_users" }
 
       it "formats without WHERE" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Temp_Users
         SQL
@@ -1328,7 +1328,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "DELETE FROM users USING accounts WHERE users.account_id = accounts.id AND accounts.expired = true" }
 
       it "formats with USING and WHERE clauses" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           using   accounts
@@ -1342,7 +1342,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "DELETE FROM users WHERE id = 1 RETURNING id, name" }
 
       it "formats with RETURNING clause" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
           where   id = 1
@@ -1359,7 +1359,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "INSERT something somewhere" }
 
       it "falls through to normalize-only path" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           insert something somewhere
         SQL
       end
@@ -1369,7 +1369,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "DELETE something WHERE id = 1" }
 
       it "falls through to normalize-only path" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           delete something where id = 1
         SQL
       end
@@ -1379,7 +1379,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "SELECT id, name FROM users WHERE active = true ORDER BY name LIMIT 10" }
 
       it "still formats SELECT queries correctly" do
-        expect(output).to eq(<<~SQL)
+        expect(output).to match_formatted_text(<<~SQL)
           select  id,
                   name
 
