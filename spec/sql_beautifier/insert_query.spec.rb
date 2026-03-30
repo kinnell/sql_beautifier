@@ -249,9 +249,7 @@ RSpec.describe SqlBeautifier::InsertQuery do
 
       it "formats the SELECT without wrapping parentheses" do
         expect(output).to match_formatted_text(<<~SQL)
-          insert into Export_Table (
-              id
-          )
+          insert into Export_Table (id)
 
           select  distinct
                   u.id
@@ -332,6 +330,68 @@ RSpec.describe SqlBeautifier::InsertQuery do
               created_at
           )
           values  (1, now())
+        SQL
+      end
+    end
+
+    context "with a single column" do
+      let(:output) { described_class.parse("insert into users (id) values (1)").render }
+
+      it "renders the column list inline" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Users (id)
+          values  (1)
+        SQL
+      end
+    end
+
+    context "with a single column and INSERT...SELECT" do
+      let(:output) { described_class.parse("insert into temp_export_constituents (id) select id from users").render }
+
+      it "renders the column list inline" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Temp_Export_Constituents (id)
+
+          select  id
+          from    Users u
+        SQL
+      end
+    end
+
+    context "with a single column and RETURNING" do
+      let(:output) { described_class.parse("insert into users (id) values (1) returning id").render }
+
+      it "renders the column list inline" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Users (id)
+          values  (1)
+          returning id
+        SQL
+      end
+    end
+
+    context "with a single column and ON CONFLICT" do
+      let(:output) { described_class.parse("insert into users (id) values (1) on conflict (id) do nothing").render }
+
+      it "renders the column list inline" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Users (id)
+          values  (1)
+          on conflict (id) do nothing
+        SQL
+      end
+    end
+
+    context "with two columns" do
+      let(:output) { described_class.parse("insert into users (id, name) values (1, 'Alice')").render }
+
+      it "renders the column list on multiple lines" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Users (
+              id,
+              name
+          )
+          values  (1, 'Alice')
         SQL
       end
     end

@@ -825,6 +825,54 @@ RSpec.describe SqlBeautifier::Formatter do
     end
 
     ############################################################################
+    ## DROP TABLE Integration
+    ############################################################################
+
+    context "with DROP TABLE" do
+      let(:value) { "DROP TABLE users" }
+
+      it "formats with PascalCase table name" do
+        expect(output).to match_formatted_text(<<~SQL)
+          drop table Users
+        SQL
+      end
+    end
+
+    context "with DROP TABLE IF EXISTS" do
+      let(:value) { "DROP TABLE IF EXISTS temp_export_constituents" }
+
+      it "formats with IF EXISTS and PascalCase table name" do
+        expect(output).to match_formatted_text(<<~SQL)
+          drop table if exists Temp_Export_Constituents
+        SQL
+      end
+    end
+
+    ############################################################################
+    ## CREATE TABLE (DDL) Integration
+    ############################################################################
+
+    context "with CREATE TEMPORARY TABLE with column definitions" do
+      let(:value) { "CREATE TEMPORARY TABLE temp_export_constituents (id bigint)" }
+
+      it "formats with modifier and PascalCase table name" do
+        expect(output).to match_formatted_text(<<~SQL)
+          create temporary table Temp_Export_Constituents (id bigint)
+        SQL
+      end
+    end
+
+    context "with CREATE TABLE with multiple column definitions" do
+      let(:value) { "CREATE TABLE users (id bigint, name text, email varchar(255))" }
+
+      it "formats with PascalCase table name and preserves column definitions" do
+        expect(output).to match_formatted_text(<<~SQL)
+          create table Users (id bigint, name text, email varchar(255))
+        SQL
+      end
+    end
+
+    ############################################################################
     ## CREATE TABLE AS Integration
     ############################################################################
 
@@ -1252,6 +1300,17 @@ RSpec.describe SqlBeautifier::Formatter do
       end
     end
 
+    context "with INSERT with a single column" do
+      let(:value) { "INSERT INTO temp_export_constituents (id) VALUES (1)" }
+
+      it "renders the column list inline" do
+        expect(output).to match_formatted_text(<<~SQL)
+          insert into Temp_Export_Constituents (id)
+          values  (1)
+        SQL
+      end
+    end
+
     context "with INSERT without column list" do
       let(:value) { "INSERT INTO users VALUES (1, 'Alice', 'alice@example.com')" }
 
@@ -1314,9 +1373,7 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats the INSERT and delegates the parenthesized SELECT" do
         expect(output).to match_formatted_text(<<~SQL)
-          insert into Export_Table (
-              id
-          )
+          insert into Export_Table (id)
 
           select  distinct
                   u.id

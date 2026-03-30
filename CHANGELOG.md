@@ -2,6 +2,12 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Add `DROP TABLE` formatting — `DROP TABLE [IF EXISTS] table_name` statements are now recognized and rendered with proper keyword casing and PascalCase table names instead of passing through as normalized text
+- Add `CREATE TABLE` (DDL) formatting — `CREATE [TEMP|TEMPORARY|UNLOGGED|LOCAL] TABLE [IF NOT EXISTS] table_name (column_defs)` statements with column definitions are now recognized and rendered with proper keyword casing and PascalCase table names
+- Fix `INSERT INTO` with a single column rendering the column list on multiple lines — single-column lists now render inline (e.g. `insert into Table (id)` instead of expanding to three lines)
+- Reject `DROP TABLE` statements with trailing text (e.g. `CASCADE`, `RESTRICT`, multiple table names) — these now return `nil` instead of silently dropping the trailing text
+- Reject `CREATE TABLE` (DDL) statements with trailing clauses after column definitions (e.g. `WITH (...)`, `TABLESPACE ...`) — these now return `nil` instead of silently dropping the trailing text
+
 ## [0.10.2] - 2026-03-30
 
 - Fix `INSERT INTO ... (columns) (SELECT ...)` not being recognized — `InsertQuery.parse_body` now unwraps parenthesized SELECT subqueries, supporting PostgreSQL's valid `INSERT INTO table (cols) (SELECT ...)` syntax

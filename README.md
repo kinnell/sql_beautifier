@@ -411,6 +411,36 @@ where   users.account_id = accounts.id
 returning users.id;
 ```
 
+### DROP TABLE
+
+`DROP TABLE` statements are recognized and formatted with proper keyword casing and table name formatting:
+
+```ruby
+SqlBeautifier.call("DROP TABLE IF EXISTS persons")
+```
+
+Produces:
+
+```sql
+drop table if exists Persons;
+```
+
+### CREATE TABLE (DDL)
+
+`CREATE TABLE` statements with column definitions are recognized and formatted with proper keyword casing and table name formatting. Column definitions are preserved as-is:
+
+```ruby
+SqlBeautifier.call("CREATE TEMPORARY TABLE persons (id bigint)")
+```
+
+Produces:
+
+```sql
+create temporary table Persons (id bigint);
+```
+
+Modifiers (`TEMP`, `TEMPORARY`, `UNLOGGED`, `LOCAL`) and `IF NOT EXISTS` are supported.
+
 ### Set Operators (UNION, INTERSECT, EXCEPT)
 
 Compound queries joined by set operators are detected and each segment is formatted independently. The operator keyword appears on its own line with blank-line separation:
