@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.10.3] - 2026-03-30
+
 - Add `DROP TABLE` formatting — `DROP TABLE [IF EXISTS] table_name` statements are now recognized and rendered with proper keyword casing and PascalCase table names instead of passing through as normalized text
 - Add `CREATE TABLE` (DDL) formatting — `CREATE [TEMP|TEMPORARY|UNLOGGED|LOCAL] TABLE [IF NOT EXISTS] table_name (column_defs)` statements with column definitions are now recognized and rendered with proper keyword casing and PascalCase table names
 - Fix `INSERT INTO` with a single column rendering the column list on multiple lines — single-column lists now render inline (e.g. `insert into Table (id)` instead of expanding to three lines)
