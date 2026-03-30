@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.10.0] - 2026-03-30
+
 - Add CASE expression formatting — searched CASE (`CASE WHEN ... THEN ... ELSE ... END`) and simple CASE (`CASE expr WHEN value THEN ... END`) are detected and formatted with consistent indentation of `when`/`else`/`end` lines relative to the `case` keyword
 - Add CASE integration into SELECT columns, WHERE/HAVING conditions, and UPDATE SET assignments via `CaseExpression.format_in_text`
 - Add inline vs expanded rendering for CASE expressions controlled by the existing `inline_group_threshold` configuration — short CASE expressions remain on a single line when below the threshold
