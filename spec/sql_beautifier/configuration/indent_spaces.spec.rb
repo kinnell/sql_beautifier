@@ -72,10 +72,10 @@ RSpec.describe "indent_spaces configuration" do
                       select  user_id
                       from    Orders o
                       where   product_id in (
-                                              select  id
-                                              from    Products p
-                                              where   active = true
-                                          )
+                                  select  id
+                                  from    Products p
+                                  where   active = true
+                              )
                   );
         SQL
       end
@@ -97,9 +97,9 @@ RSpec.describe "indent_spaces configuration" do
           select  id
           from    Users u
           where   id in (
-                    select  user_id
-                    from    Orders o
-                  );
+          ··········select  user_id
+          ··········from    Orders o
+          ········);
         SQL
       end
     end
@@ -110,10 +110,10 @@ RSpec.describe "indent_spaces configuration" do
       it "indents the CTE body by 2 spaces from the keyword column" do
         expect(output).to match_formatted_text(<<~SQL)
           with    active as (
-                    select  id
-                    from    Users u
-                    where   active = true
-                  )
+          ··········select  id
+          ··········from    Users u
+          ··········where   active = true
+          ········)
 
           select  *
           from    Active a;
@@ -142,14 +142,14 @@ RSpec.describe "indent_spaces configuration" do
           select  id
           from    Users u
           where   id in (
-                    select  user_id
-                    from    Orders o
-                    where   product_id in (
-                                        select  id
-                                        from    Products p
-                                        where   active = true
-                                      )
-                  );
+          ··········select  user_id
+          ··········from    Orders o
+          ··········where   product_id in (
+          ····················select  id
+          ····················from    Products p
+          ····················where   active = true
+          ··················)
+          ········);
         SQL
       end
     end

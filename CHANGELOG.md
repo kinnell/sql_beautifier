@@ -2,6 +2,11 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Fix nested subquery indentation growing excessively at each depth level — `subquery_base_indent_for` was adding the parent formatter's `depth` to the base indent calculation for subqueries on `from`/`where` lines, double-counting indentation that the parent's `format_as_subquery` would also apply; the method now computes base indentation relative to column 0 of the clause text
+- Fix subqueries on non-clause continuation lines (e.g. `inner join lateral (select...)`) using the formatter depth instead of the line's leading spaces for base indentation, causing misaligned closing parentheses
+- Fix subqueries in DML `WHERE` clauses (`DELETE`, `UPDATE`, `INSERT`) not being expanded — `DmlRendering#render_where` now applies `Query.format_subqueries_in_text` to the rendered WHERE output
+- Fix subqueries in DELETE `USING` clauses not being expanded — `DeleteQuery#render_using` now applies `Query.format_subqueries_in_text`, and `using` is recognized as a clause keyword for subquery base indentation
+
 ## [0.10.0] - 2026-03-30
 
 - Add CASE expression formatting — searched CASE (`CASE WHEN ... THEN ... ELSE ... END`) and simple CASE (`CASE expr WHEN value THEN ... END`) are detected and formatted with consistent indentation of `when`/`else`/`end` lines relative to the `case` keyword

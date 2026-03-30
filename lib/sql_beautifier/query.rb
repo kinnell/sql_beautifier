@@ -11,7 +11,7 @@ module SqlBeautifier
     ].freeze
 
     LEADING_WHITESPACE_PATTERN = %r{\A[[:space:]]*}
-    CLAUSE_KEYWORD_PREFIX_PATTERN = %r{\A(?:where|from)(?:[[:space:]]|$)}i
+    CLAUSE_KEYWORD_PREFIX_PATTERN = %r{\A(?:where|from|using)(?:[[:space:]]|$)}i
 
     attr_reader :clauses
     attr_reader :depth
@@ -87,10 +87,22 @@ module SqlBeautifier
       line_start_position = line_start_position ? line_start_position + 1 : 0
       line_before_subquery = text[line_start_position...subquery_position]
       line_leading_spaces = line_before_subquery[LEADING_WHITESPACE_PATTERN].to_s.length
+      keyword_column_width = SqlBeautifier.config_for(:keyword_column_width)
+      paren_position_on_line = subquery_position - line_start_position
 
-      return default_base_indent unless line_before_subquery.lstrip.match?(CLAUSE_KEYWORD_PREFIX_PATTERN)
+      clause_body_position = line_leading_spaces + keyword_column_width
 
-      default_base_indent + line_leading_spaces + SqlBeautifier.config_for(:keyword_column_width)
+      if line_before_subquery.lstrip.match?(CLAUSE_KEYWORD_PREFIX_PATTERN)
+        if paren_position_on_line == clause_body_position
+          default_base_indent.zero? ? clause_body_position : line_leading_spaces
+        else
+          clause_body_position
+        end
+      elsif paren_position_on_line > line_leading_spaces
+        line_leading_spaces
+      else
+        default_base_indent
+      end
     end
 
     def self.select_follows?(text, position)
