@@ -37,7 +37,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
     end
 
     context "with a WITH query" do
-      let(:value) { "with cte as (select 1) select * from cte" }
+      let(:value) { "with active_users as (select 1) select * from active_users" }
 
       it "returns nil" do
         expect(output).to be_nil
@@ -498,7 +498,7 @@ RSpec.describe SqlBeautifier::CreateTableAs do
       end
 
       it "formats the CTE body" do
-        expect(output).to include("with    active as (")
+        expect(output).to include("with Active as (")
       end
 
       it "formats the CTE main query" do

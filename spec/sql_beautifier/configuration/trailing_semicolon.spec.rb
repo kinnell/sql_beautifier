@@ -111,11 +111,11 @@ RSpec.describe "trailing_semicolon configuration" do
 
       it "appends a semicolon after the main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  )
+          with Active_Users as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          )
 
           select  *
           from    Active_Users au;
@@ -128,17 +128,17 @@ RSpec.describe "trailing_semicolon configuration" do
 
       it "appends a semicolon only at the end of the main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  ),
-                  recent_orders as (
-                      select  user_id,
-                              total
+          with Active_Users as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          ),
+          Recent_Orders as (
+          ····select  user_id,
+          ············total
 
-                      from    Orders o
-                  )
+          ····from    Orders o
+          )
 
           select  au.id,
                   ro.total
@@ -266,11 +266,11 @@ RSpec.describe "trailing_semicolon configuration" do
 
       it "formats the CTE and the separate statement with trailing semicolons" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  )
+          with Active as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          )
 
           select  *
           from    Active a;
@@ -320,11 +320,11 @@ RSpec.describe "trailing_semicolon configuration" do
 
       it "does not append a semicolon" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  )
+          with Active_Users as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          )
 
           select  *
           from    Active_Users au

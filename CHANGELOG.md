@@ -2,6 +2,9 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Change CTE formatting to use compact `with` prefix — `with` is no longer padded to the keyword column width; CTE body lines are indented by `indent_spaces` from column zero instead of from the keyword column, and the closing `)` sits at column zero; subsequent CTE definitions in multi-CTE queries also start at column zero
+- Apply table name formatting to CTE definition names — CTE names in the `with ... as (` header now follow the `table_name_format` setting (PascalCase by default), matching how CTE references are formatted in `FROM` clauses
+
 ## [0.10.4] - 2026-03-30
 
 - Add `IN` list multiline formatting — `WHERE x IN (1, 2, 3)` value lists with 2+ items are now expanded to one item per line with proper indentation; single-item lists and `IN (SELECT ...)` subqueries are left unchanged

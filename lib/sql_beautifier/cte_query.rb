@@ -102,21 +102,16 @@ module SqlBeautifier
     end
 
     def render
-      keyword_width = SqlBeautifier.config_for(:keyword_column_width)
-      continuation_indent = Util.continuation_padding
-
       output = +""
 
       @definitions.each_with_index do |definition, index|
         if index.zero?
-          output << Util.keyword_padding("with")
+          output << "#{Util.format_keyword('with')} "
           output << "#{Util.format_keyword('recursive')} " if @recursive
-        else
-          output << continuation_indent
         end
 
         output << definition.render_header
-        output << definition.render_body(keyword_width)
+        output << definition.render_body(0)
         output << (index < @definitions.length - 1 ? ",\n" : "\n\n")
       end
 

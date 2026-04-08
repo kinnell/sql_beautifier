@@ -641,14 +641,14 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats the CTE and main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id,
-                              name
+          with Active_Users as (
+          ····select  id,
+          ············name
 
-                      from    Users u
+          ····from    Users u
 
-                      where   active = true
-                  )
+          ····where   active = true
+          )
 
           select  *
           from    Active_Users au
@@ -661,17 +661,17 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats each CTE and the main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  ),
-                  recent_orders as (
-                      select  user_id,
-                              total
+          with Active_Users as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          ),
+          Recent_Orders as (
+          ····select  user_id,
+          ············total
 
-                      from    Orders o
-                  )
+          ····from    Orders o
+          )
 
           select  au.id,
                   ro.total
@@ -687,15 +687,15 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats the CTE body with join and alias handling" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    order_details as (
-                      select  u.id,
-                              o.total
+          with Order_Details as (
+          ····select  u.id,
+          ············o.total
 
-                      from    Users u
-                              inner join Orders o on o.user_id = u.id
+          ····from    Users u
+          ············inner join Orders o on o.user_id = u.id
 
-                      where   o.total > 100
-                  )
+          ····where   o.total > 100
+          )
 
           select  *
           from    Order_Details od
@@ -708,14 +708,14 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats both the CTE body and the nested subquery" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    filtered as (
-                      select  id
-                      from    Users u
-                      where   id in (
-                                  select  user_id
-                                  from    Orders o
-                              )
-                  )
+          with Filtered as (
+          ····select  id
+          ····from    Users u
+          ····where   id in (
+          ················select  user_id
+          ················from    Orders o
+          ············)
+          )
 
           select  *
           from    Filtered f
@@ -728,7 +728,7 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "preserves string literals and formats correctly" do
         expect(output).to include("where   name = 'with as select'")
-        expect(output).to start_with("with    labeled as (")
+        expect(output).to start_with("with Labeled as (")
       end
     end
 
@@ -736,7 +736,7 @@ RSpec.describe SqlBeautifier::Formatter do
       let(:value) { "WITH RECURSIVE numbers AS (SELECT 1 AS n) SELECT * FROM numbers" }
 
       it "formats with the recursive keyword" do
-        expect(output).to start_with("with    recursive numbers as (")
+        expect(output).to start_with("with recursive Numbers as (")
         expect(output).to include(<<~SQL.chomp)
           select  *
           from    Numbers n
@@ -745,81 +745,81 @@ RSpec.describe SqlBeautifier::Formatter do
     end
 
     context "with a recursive CTE with a SEARCH clause" do
-      let(:value) { "WITH RECURSIVE cte AS (SELECT id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col SELECT * FROM cte" }
+      let(:value) { "WITH RECURSIVE linked_nodes AS (SELECT id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col SELECT * FROM linked_nodes" }
 
       it "preserves the SEARCH clause while formatting the CTE body" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    recursive cte as (
-                      select  id
-                      from    Nodes n
-                  )
+          with recursive Linked_Nodes as (
+          ····select  id
+          ····from    Nodes n
+          )
 
-          search depth first by id set order_col select * from cte
+          search depth first by id set order_col select * from linked_nodes
         SQL
       end
     end
 
     context "with a recursive CTE with SEARCH and CYCLE clauses" do
-      let(:value) { "WITH RECURSIVE cte AS (SELECT id, parent_id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col CYCLE id SET is_cycle USING cycle_path SELECT * FROM cte" }
+      let(:value) { "WITH RECURSIVE linked_nodes AS (SELECT id, parent_id FROM nodes) SEARCH DEPTH FIRST BY id SET order_col CYCLE id SET is_cycle USING cycle_path SELECT * FROM linked_nodes" }
 
       it "preserves SEARCH and CYCLE clauses while formatting the CTE body" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    recursive cte as (
-                      select  id,
-                              parent_id
+          with recursive Linked_Nodes as (
+          ····select  id,
+          ············parent_id
 
-                      from    Nodes n
-                  )
+          ····from    Nodes n
+          )
 
-          search depth first by id set order_col cycle id set is_cycle using cycle_path select * from cte
+          search depth first by id set order_col cycle id set is_cycle using cycle_path select * from linked_nodes
         SQL
       end
     end
 
     context "with a CTE with a column list" do
-      let(:value) { "WITH cte(a, b) AS (SELECT 1, 2) SELECT * FROM cte" }
+      let(:value) { "WITH active_users(a, b) AS (SELECT 1, 2) SELECT * FROM active_users" }
 
       it "preserves the column list in the header" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    cte (a, b) as (
-                      select  1,
-                              2
-                  )
+          with Active_Users (a, b) as (
+          ····select  1,
+          ············2
+          )
 
           select  *
-          from    Cte c
+          from    Active_Users au
         SQL
       end
     end
 
     context "with a materialized CTE" do
-      let(:value) { "WITH cte AS MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
+      let(:value) { "WITH active_users AS MATERIALIZED (SELECT id FROM users) SELECT * FROM active_users" }
 
       it "formats the CTE and preserves the :materialized keyword" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    cte as materialized (
-                      select  id
-                      from    Users u
-                  )
+          with Active_Users as materialized (
+          ····select  id
+          ····from    Users u
+          )
 
           select  *
-          from    Cte c
+          from    Active_Users au
         SQL
       end
     end
 
     context "with a not materialized CTE" do
-      let(:value) { "WITH cte AS NOT MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
+      let(:value) { "WITH active_users AS NOT MATERIALIZED (SELECT id FROM users) SELECT * FROM active_users" }
 
       it "formats the CTE and preserves the :not materialized keywords" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    cte as not materialized (
-                      select  id
-                      from    Users u
-                  )
+          with Active_Users as not materialized (
+          ····select  id
+          ····from    Users u
+          )
 
           select  *
-          from    Cte c
+          from    Active_Users au
         SQL
       end
     end
@@ -961,7 +961,7 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats the CTE inside the body" do
         expect(output).to start_with("create temp table Foo as (")
-        expect(output).to include("with    active as (")
+        expect(output).to include("with Active as (")
         expect(output).to include("select  *")
       end
     end
@@ -1128,15 +1128,15 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats the CTE body as a compound query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    combined as (
-                      select  id
-                      from    Users u
+          with Combined as (
+          ····select  id
+          ····from    Users u
 
-                      union all
+          ····union all
 
-                      select  id
-                      from    Admins a
-                  )
+          ····select  id
+          ····from    Admins a
+          )
 
           select  *
           from    Combined c
@@ -1207,11 +1207,11 @@ RSpec.describe SqlBeautifier::Formatter do
 
       it "formats the CTE and then the compound main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  )
+          with Active as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          )
 
           select  id
           from    Active a

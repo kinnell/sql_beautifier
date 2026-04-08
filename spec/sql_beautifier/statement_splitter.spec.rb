@@ -145,11 +145,11 @@ RSpec.describe SqlBeautifier::StatementSplitter do
     end
 
     context "with a CTE followed by a semicolon and another statement" do
-      let(:value) { "WITH cte AS (SELECT id FROM users) SELECT * FROM cte; SELECT id FROM departments" }
+      let(:value) { "WITH active_users AS (SELECT id FROM users) SELECT * FROM active_users; SELECT id FROM departments" }
 
       it "keeps the CTE intact and splits on the semicolon" do
         expect(output).to eq([
-          "WITH cte AS (SELECT id FROM users) SELECT * FROM cte",
+          "WITH active_users AS (SELECT id FROM users) SELECT * FROM active_users",
           "SELECT id FROM departments",
         ])
       end
@@ -336,10 +336,10 @@ RSpec.describe SqlBeautifier::StatementSplitter do
     end
 
     context "with a CTE" do
-      let(:value) { "WITH cte AS (SELECT id FROM users) SELECT * FROM cte" }
+      let(:value) { "WITH active_users AS (SELECT id FROM users) SELECT * FROM active_users" }
 
       it "does not split the CTE main query" do
-        expect(output).to eq(["WITH cte AS (SELECT id FROM users) SELECT * FROM cte"])
+        expect(output).to eq(["WITH active_users AS (SELECT id FROM users) SELECT * FROM active_users"])
       end
     end
 

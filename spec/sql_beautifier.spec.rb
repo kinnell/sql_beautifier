@@ -649,14 +649,14 @@ RSpec.describe SqlBeautifier do
 
       it "formats the CTE and main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id,
-                              name
+          with Active_Users as (
+          ····select  id,
+          ············name
 
-                      from    Users u
+          ····from    Users u
 
-                      where   active = true
-                  )
+          ····where   active = true
+          )
 
           select  *
           from    Active_Users au
@@ -669,17 +669,17 @@ RSpec.describe SqlBeautifier do
 
       it "formats each CTE and the main query" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  ),
-                  recent_orders as (
-                      select  user_id,
-                              total
+          with Active_Users as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          ),
+          Recent_Orders as (
+          ····select  user_id,
+          ············total
 
-                      from    Orders o
-                  )
+          ····from    Orders o
+          )
 
           select  au.id,
                   ro.total
@@ -695,9 +695,9 @@ RSpec.describe SqlBeautifier do
 
       it "formats with the recursive keyword" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    recursive numbers as (
-                      select  1 as n
-                  )
+          with recursive Numbers as (
+          ····select  1 as n
+          )
 
           select  *
           from    Numbers n
@@ -706,49 +706,49 @@ RSpec.describe SqlBeautifier do
     end
 
     context "with a materialized CTE" do
-      let(:value) { "WITH cte AS MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
+      let(:value) { "WITH active_users AS MATERIALIZED (SELECT id FROM users) SELECT * FROM active_users" }
 
       it "preserves the materialized keyword" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    cte as materialized (
-                      select  id
-                      from    Users u
-                  )
+          with Active_Users as materialized (
+          ····select  id
+          ····from    Users u
+          )
 
           select  *
-          from    Cte c
+          from    Active_Users au
         SQL
       end
     end
 
     context "with a not materialized CTE" do
-      let(:value) { "WITH cte AS NOT MATERIALIZED (SELECT id FROM users) SELECT * FROM cte" }
+      let(:value) { "WITH active_users AS NOT MATERIALIZED (SELECT id FROM users) SELECT * FROM active_users" }
 
       it "preserves the not materialized keywords" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    cte as not materialized (
-                      select  id
-                      from    Users u
-                  )
+          with Active_Users as not materialized (
+          ····select  id
+          ····from    Users u
+          )
 
           select  *
-          from    Cte c
+          from    Active_Users au
         SQL
       end
     end
 
     context "with a CTE with a column list" do
-      let(:value) { "WITH cte(a, b) AS (SELECT 1, 2) SELECT * FROM cte" }
+      let(:value) { "WITH active_users(a, b) AS (SELECT 1, 2) SELECT * FROM active_users" }
 
       it "preserves the column list in the header" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    cte (a, b) as (
-                      select  1,
-                              2
-                  )
+          with Active_Users (a, b) as (
+          ····select  1,
+          ············2
+          )
 
           select  *
-          from    Cte c
+          from    Active_Users au
         SQL
       end
     end
@@ -758,14 +758,14 @@ RSpec.describe SqlBeautifier do
 
       it "formats the CTE body and the nested subquery" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    filtered as (
-                      select  id
-                      from    Users u
-                      where   id in (
-                                  select  user_id
-                                  from    Orders o
-                              )
-                  )
+          with Filtered as (
+          ····select  id
+          ····from    Users u
+          ····where   id in (
+          ················select  user_id
+          ················from    Orders o
+          ············)
+          )
 
           select  *
           from    Filtered f
@@ -778,18 +778,42 @@ RSpec.describe SqlBeautifier do
 
       it "formats the CTE body with JOIN and alias handling" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    order_details as (
-                      select  u.id,
-                              o.total
+          with Order_Details as (
+          ····select  u.id,
+          ············o.total
 
-                      from    Users u
-                              inner join Orders o on o.user_id = u.id
+          ····from    Users u
+          ············inner join Orders o on o.user_id = u.id
 
-                      where   o.total > 100
-                  )
+          ····where   o.total > 100
+          )
 
           select  *
           from    Order_Details od
+        SQL
+      end
+    end
+
+    context "with a CTE and a DELETE main query using USING" do
+      let(:value) { "WITH exclusion_set AS (SELECT DISTINCT c.id FROM constituents c INNER JOIN campaigns ca ON ca.id = c.campaign_id WHERE c.health_system_id = 6 AND ca.dispatch_date >= '2025-09-01') DELETE FROM temp_exports temp_e USING exclusion_set es WHERE es.id = temp_e.id" }
+
+      it "formats the CTE with the DELETE main query" do
+        expect(output).to match_formatted_text(<<~SQL)
+          with Exclusion_Set as (
+          ····select  distinct
+          ············c.id
+
+          ····from    Constituents c
+          ············inner join Campaigns ca on ca.id = c.campaign_id
+
+          ····where   c.health_system_id = 6
+          ············and ca.dispatch_date >= '2025-09-01'
+          )
+
+          delete
+          from    Temp_Exports temp_e
+          using   exclusion_set es
+          where   es.id = temp_e.id
         SQL
       end
     end
@@ -873,14 +897,14 @@ RSpec.describe SqlBeautifier do
       it "formats the CTE inside the body" do
         expect(output).to match_formatted_text(<<~SQL)
           create temp table Foo as (
-              with    active as (
-                          select  id
-                          from    Users u
-                          where   active = true
-                      )
+          ····with Active as (
+          ········select  id
+          ········from    Users u
+          ········where   active = true
+          ····)
 
-              select  *
-              from    Active a
+          ····select  *
+          ····from    Active a
           )
         SQL
       end
