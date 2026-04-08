@@ -57,10 +57,10 @@ RSpec.describe "table_name_format configuration" do
 
       it "PascalCases the CTE reference in FROM" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    Users u
-                  )
+          with Active_Users as (
+          ····select  id
+          ····from    Users u
+          )
 
           select  *
           from    Active_Users au;
@@ -130,10 +130,10 @@ RSpec.describe "table_name_format configuration" do
 
       it "keeps CTE reference lowercase in FROM" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active_users as (
-                      select  id
-                      from    users u
-                  )
+          with active_users as (
+          ····select  id
+          ····from    users u
+          )
 
           select  *
           from    active_users au;

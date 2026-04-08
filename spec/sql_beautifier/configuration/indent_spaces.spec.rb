@@ -34,13 +34,13 @@ RSpec.describe "indent_spaces configuration" do
     context "with a CTE" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
-      it "indents the CTE body by 4 spaces from the keyword column" do
+      it "indents the CTE body by 4 spaces" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  )
+          with Active as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          )
 
           select  *
           from    Active a;
@@ -107,13 +107,13 @@ RSpec.describe "indent_spaces configuration" do
     context "with a CTE" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
-      it "indents the CTE body by 2 spaces from the keyword column" do
+      it "indents the CTE body by 2 spaces" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active as (
-          ··········select  id
-          ··········from    Users u
-          ··········where   active = true
-          ········)
+          with Active as (
+          ··select  id
+          ··from    Users u
+          ··where   active = true
+          )
 
           select  *
           from    Active a;

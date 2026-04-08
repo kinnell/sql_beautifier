@@ -8,7 +8,8 @@ module SqlBeautifier
     option :materialization, default: -> {}
 
     def render_header
-      header = +@name.to_s
+      formatted_name = @name.start_with?(Constants::DOUBLE_QUOTE) ? @name : Util.format_table_name(@name)
+      header = +formatted_name
       header << " (#{@column_list})" if @column_list
       header << " #{Util.format_keyword('as')}"
       header << " #{format_materialization}" if @materialization

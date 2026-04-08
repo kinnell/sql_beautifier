@@ -127,13 +127,13 @@ RSpec.describe "keyword_column_width configuration" do
     context "with a CTE" do
       let(:value) { "WITH active AS (SELECT id FROM users WHERE active = true) SELECT * FROM active" }
 
-      it "widens the CTE body indentation" do
+      it "does not affect CTE header padding" do
         expect(output).to match_formatted_text(<<~SQL)
-          with      active as (
-                        select    id
-                        from      Users u
-                        where     active = true
-                    )
+          with Active as (
+          ····select    id
+          ····from      Users u
+          ····where     active = true
+          )
 
           select    *
           from      Active a;

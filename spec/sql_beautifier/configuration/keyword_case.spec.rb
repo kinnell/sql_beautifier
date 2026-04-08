@@ -82,11 +82,11 @@ RSpec.describe "keyword_case configuration" do
 
       it "lowercases CTE keywords" do
         expect(output).to match_formatted_text(<<~SQL)
-          with    active as (
-                      select  id
-                      from    Users u
-                      where   active = true
-                  )
+          with Active as (
+          ····select  id
+          ····from    Users u
+          ····where   active = true
+          )
 
           select  *
           from    Active a;
@@ -194,11 +194,11 @@ RSpec.describe "keyword_case configuration" do
 
       it "uppercases CTE keywords" do
         expect(output).to match_formatted_text(<<~SQL)
-          WITH    active AS (
-                      SELECT  id
-                      FROM    Users u
-                      WHERE   active = true
-                  )
+          WITH Active AS (
+          ····SELECT  id
+          ····FROM    Users u
+          ····WHERE   active = true
+          )
 
           SELECT  *
           FROM    Active a;
