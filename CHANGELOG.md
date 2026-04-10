@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.10.7] - 2026-04-10
+
 - Expand parenthesized compound conditions in JOIN `ON` clauses — `ON a = b OR (c = 'd' AND e = f)` now formats the parenthesized group across multiple lines using the same `Condition` rendering as WHERE/HAVING clauses, respecting `inline_group_threshold`
 
 ## [0.10.6] - 2026-04-09
