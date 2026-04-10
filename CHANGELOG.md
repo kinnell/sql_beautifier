@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+## [0.10.6] - 2026-04-09
+
 - Apply table name formatting to `DELETE ... USING` clause table references — table names in the `USING` clause now follow the `table_name_format` setting (PascalCase by default), matching how table names are formatted in `FROM`, `INSERT INTO`, and CTE definitions
 
 ## [0.10.5] - 2026-04-08
