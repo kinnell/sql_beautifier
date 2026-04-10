@@ -150,9 +150,22 @@ RSpec.describe SqlBeautifier::DeleteQuery do
         expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
-          using   accounts
+          using   Accounts
           where   users.account_id = accounts.id
                   and accounts.expired = true
+        SQL
+      end
+    end
+
+    context "with USING clause referencing a multi-word table name" do
+      let(:output) { described_class.parse("delete from temp_export_constituents temp_c using exclusion_set_constituents esc where esc.id = temp_c.id").render }
+
+      it "formats the using table name in PascalCase" do
+        expect(output).to match_formatted_text(<<~SQL)
+          delete
+          from    Temp_Export_Constituents temp_c
+          using   Exclusion_Set_Constituents esc
+          where   esc.id = temp_c.id
         SQL
       end
     end
@@ -215,7 +228,7 @@ RSpec.describe SqlBeautifier::DeleteQuery do
         expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
-          using   accounts
+          using   Accounts
           where   users.account_id = accounts.id
           returning users.id
         SQL

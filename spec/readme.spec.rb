@@ -324,7 +324,7 @@ RSpec.describe "README examples" do
       expect(output).to match_formatted_text(<<~SQL)
         delete
         from    Users
-        using   accounts
+        using   Accounts
         where   users.account_id = accounts.id
         returning users.id;
       SQL

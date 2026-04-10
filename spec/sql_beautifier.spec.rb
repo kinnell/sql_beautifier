@@ -812,7 +812,7 @@ RSpec.describe SqlBeautifier do
 
           delete
           from    Temp_Exports temp_e
-          using   exclusion_set es
+          using   Exclusion_Set es
           where   es.id = temp_e.id
         SQL
       end

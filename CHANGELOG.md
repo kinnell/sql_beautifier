@@ -2,6 +2,8 @@
 
 ## [X.X.X] - YYYY-MM-DD
 
+- Apply table name formatting to `DELETE ... USING` clause table references — table names in the `USING` clause now follow the `table_name_format` setting (PascalCase by default), matching how table names are formatted in `FROM`, `INSERT INTO`, and CTE definitions
+
 ## [0.10.5] - 2026-04-08
 
 - Change CTE formatting to use compact `with` prefix — `with` is no longer padded to the keyword column width; CTE body lines are indented by `indent_spaces` from column zero instead of from the keyword column, and the closing `)` sits at column zero; subsequent CTE definitions in multi-CTE queries also start at column zero

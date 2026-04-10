@@ -1483,7 +1483,7 @@ RSpec.describe SqlBeautifier::Formatter do
         expect(output).to match_formatted_text(<<~SQL)
           delete
           from    Users
-          using   accounts
+          using   Accounts
           where   users.account_id = accounts.id
                   and accounts.expired = true
         SQL

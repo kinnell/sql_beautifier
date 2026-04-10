@@ -441,7 +441,7 @@ Produces:
 ```sql
 delete
 from    Users
-using   accounts
+using   Accounts
 where   users.account_id = accounts.id
 returning users.id;
 ```

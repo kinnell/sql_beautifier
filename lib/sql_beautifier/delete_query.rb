@@ -118,8 +118,23 @@ module SqlBeautifier
     end
 
     def render_using
-      formatted_using_text = "\n#{Util.keyword_padding('using')}#{@using_clause}"
+      formatted_clause = format_using_table_references(@using_clause)
+      formatted_using_text = "\n#{Util.keyword_padding('using')}#{formatted_clause}"
       Query.format_subqueries_in_text(formatted_using_text, depth: @depth)
+    end
+
+    def format_using_table_references(clause_text)
+      segments = Tokenizer.split_by_top_level_commas(clause_text)
+      segments.map { |segment| format_table_name_in_reference(segment.strip) }.join(", ")
+    end
+
+    def format_table_name_in_reference(reference_text)
+      return reference_text if reference_text.start_with?(Constants::OPEN_PARENTHESIS)
+
+      table_name = Util.first_word(reference_text)
+      return reference_text unless table_name
+
+      "#{Util.format_table_name(table_name)}#{reference_text[table_name.length..]}"
     end
   end
 end
