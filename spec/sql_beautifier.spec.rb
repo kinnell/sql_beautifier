@@ -558,6 +558,38 @@ RSpec.describe SqlBeautifier do
         SQL
       end
     end
+
+    context "with a parenthesized group in the ON clause" do
+      let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id OR (orders.status = 'active' AND orders.verified = true)" }
+
+      it "expands the parenthesized group" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  u.id
+
+          from    Users u
+                  inner join Orders o on o.user_id = u.id
+                      or (
+                          o.status = 'active'
+                          and o.verified = true
+                      )
+        SQL
+      end
+    end
+
+    context "with a parenthesized group in the ON clause within :inline_group_threshold" do
+      let(:output) { described_class.call(value, trailing_semicolon: false, inline_group_threshold: 80) }
+      let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id OR (orders.status = 'active' AND orders.verified = true)" }
+
+      it "keeps the parenthesized group inline" do
+        expect(output).to match_formatted_text(<<~SQL)
+          select  u.id
+
+          from    Users u
+                  inner join Orders o on o.user_id = u.id
+                      or (o.status = 'active' and o.verified = true)
+        SQL
+      end
+    end
   end
 
   ############################################################################

@@ -56,20 +56,32 @@ module SqlBeautifier
     def render(continuation_indent:, condition_indent:)
       rendered_table = @table_reference.render(trailing_sentinels: @trailing_sentinels)
       lateral_prefix = @lateral ? "lateral " : ""
+      condition_indent_width = condition_indent.length
       lines = []
 
       if @conditions.any?
         first_condition = @conditions.first[1]
-        lines << "#{continuation_indent}#{@keyword} #{lateral_prefix}#{rendered_table} on #{first_condition}"
+        formatted_first_condition = format_condition(first_condition, indent_width: condition_indent_width)
+        lines << "#{continuation_indent}#{@keyword} #{lateral_prefix}#{rendered_table} on #{formatted_first_condition}"
 
         @conditions.drop(1).each do |conjunction, condition|
-          lines << "#{condition_indent}#{conjunction} #{condition}"
+          formatted_condition = format_condition(condition, indent_width: condition_indent_width)
+          lines << "#{condition_indent}#{conjunction} #{formatted_condition}"
         end
       else
         lines << "#{continuation_indent}#{@keyword} #{lateral_prefix}#{rendered_table}"
       end
 
       lines.join("\n")
+    end
+
+    private
+
+    def format_condition(condition_text, indent_width:)
+      condition_node = Condition.build(nil, condition_text)
+      return condition_text if condition_node.leaf?
+
+      condition_node.render(indent_width: indent_width)
     end
   end
 end

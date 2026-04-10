@@ -111,6 +111,25 @@ where   u.active = true
 order by o.total desc;
 ```
 
+Parenthesized compound conditions in ON clauses are expanded to multiple lines, following the same formatting as WHERE/HAVING groups and respecting `inline_group_threshold`:
+
+```ruby
+SqlBeautifier.call("SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id OR (orders.status = 'active' AND orders.verified = true)")
+```
+
+Produces:
+
+```sql
+select  u.id
+
+from    Users u
+        inner join Orders o on o.user_id = u.id
+            or (
+                o.status = 'active'
+                and o.verified = true
+            );
+```
+
 Supported join types: `inner join`, `left join`, `right join`, `full join`, `left outer join`, `right outer join`, `full outer join`, `cross join`. The `LATERAL` modifier is supported with `inner join lateral` and `left join lateral` for lateral subqueries.
 
 ### DISTINCT and DISTINCT ON

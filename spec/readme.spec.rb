@@ -57,6 +57,23 @@ RSpec.describe "README examples" do
     end
   end
 
+  context "JOIN with parenthesized group in ON clause" do
+    let(:value) { "SELECT users.id FROM users INNER JOIN orders ON orders.user_id = users.id OR (orders.status = 'active' AND orders.verified = true)" }
+
+    it "expands the parenthesized group in the ON clause" do
+      expect(output).to match_formatted_text(<<~SQL)
+        select  u.id
+
+        from    Users u
+                inner join Orders o on o.user_id = u.id
+                    or (
+                        o.status = 'active'
+                        and o.verified = true
+                    );
+      SQL
+    end
+  end
+
   context "DISTINCT with multiple columns" do
     let(:value) { "SELECT DISTINCT id, name, email FROM users" }
 
